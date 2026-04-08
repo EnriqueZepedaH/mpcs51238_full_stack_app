@@ -151,3 +151,15 @@ export function getThisWeekWorkouts(workouts: Workout[]): Workout[] {
     return d >= monday;
   });
 }
+
+export function getLast7DaysWorkouts(workouts: Workout[]): Workout[] {
+  const now = new Date();
+  const cutoff = new Date(now);
+  cutoff.setDate(now.getDate() - 6);
+  cutoff.setHours(0, 0, 0, 0);
+
+  return workouts.filter((w) => {
+    const d = new Date(w.date + "T00:00:00");
+    return d >= cutoff;
+  });
+}

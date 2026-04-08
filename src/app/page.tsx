@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useWorkouts } from "@/lib/workout-context";
-import { calcVolume, formatDate, getThisWeekWorkouts } from "@/lib/utils";
+import { calcVolume, formatDate, getLast7DaysWorkouts } from "@/lib/utils";
 import StatsCard from "@/components/stats-card";
 import PageHeader from "@/components/page-header";
 import MuscleHeatmap from "@/components/muscle-heatmap";
@@ -10,7 +10,8 @@ import MuscleHeatmap from "@/components/muscle-heatmap";
 export default function DashboardPage() {
   const { state } = useWorkouts();
   const { workouts } = state;
-  const thisWeek = getThisWeekWorkouts(workouts);
+  const last7Days = getLast7DaysWorkouts(workouts);
+  const daysActive = new Set(last7Days.map((w) => w.date)).size;
   const totalVolume = workouts.reduce(
     (sum, w) => sum + calcVolume(w.exercises),
     0
@@ -33,9 +34,9 @@ export default function DashboardPage() {
           subtext="all time"
         />
         <StatsCard
-          label="This Week"
-          value={thisWeek.length}
-          subtext={`workout${thisWeek.length !== 1 ? "s" : ""}`}
+          label="Days Active"
+          value={`${daysActive} / 7`}
+          subtext="last 7 days"
         />
         <StatsCard
           label="Total Volume"
@@ -44,9 +45,9 @@ export default function DashboardPage() {
         />
       </div>
 
-      {thisWeek.length > 0 && (
+      {last7Days.length > 0 && (
         <MuscleHeatmap
-          exercises={thisWeek.flatMap((w) => w.exercises)}
+          exercises={last7Days.flatMap((w) => w.exercises)}
         />
       )}
 
