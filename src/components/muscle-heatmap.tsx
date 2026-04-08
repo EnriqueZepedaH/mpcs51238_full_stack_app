@@ -109,8 +109,8 @@ export default function MuscleHeatmap({
             />
 
             {/* Forearms */}
-            <path d="M16 102 Q13 120 14 138 Q20 140 22 138 Q24 120 24 102Z" fill="#F3F4F6" stroke="#D1D5DB" strokeWidth={0.5} />
-            <path d="M104 102 Q107 120 106 138 Q100 140 98 138 Q96 120 96 102Z" fill="#F3F4F6" stroke="#D1D5DB" strokeWidth={0.5} />
+            <path d="M16 102 Q13 120 14 138 Q20 140 22 138 Q24 120 24 102Z" {...regionProps("Forearms")} />
+            <path d="M104 102 Q107 120 106 138 Q100 140 98 138 Q96 120 96 102Z" {...regionProps("Forearms")} />
 
             {/* Core / Abs */}
             <path
@@ -118,17 +118,17 @@ export default function MuscleHeatmap({
               {...regionProps("Core")}
             />
 
-            {/* Quads (Legs front) */}
+            {/* Quads (front upper leg) */}
             <path
               d="M38 114 Q36 150 34 185 Q44 188 50 185 Q52 150 54 114Z"
-              {...regionProps("Legs")}
+              {...regionProps("Quads")}
             />
             <path
               d="M82 114 Q84 150 86 185 Q76 188 70 185 Q68 150 66 114Z"
-              {...regionProps("Legs")}
+              {...regionProps("Quads")}
             />
 
-            {/* Calves (front/shin) */}
+            {/* Calves (front lower leg) */}
             <path d="M34 190 Q33 215 34 240 Q42 242 46 240 Q48 215 48 190Z" {...regionProps("Calves")} />
             <path d="M86 190 Q87 215 86 240 Q78 242 74 240 Q72 215 72 190Z" {...regionProps("Calves")} />
           </svg>
@@ -148,20 +148,20 @@ export default function MuscleHeatmap({
             <ellipse cx="30" cy="55" rx="12" ry="8" {...regionProps("Shoulders")} />
             <ellipse cx="90" cy="55" rx="12" ry="8" {...regionProps("Shoulders")} />
 
-            {/* Upper Back / Traps */}
+            {/* Traps (upper back) */}
             <path
               d="M38 48 Q60 44 82 48 Q84 58 82 65 Q60 68 38 65 Q36 58 38 48Z"
-              {...regionProps("Back")}
+              {...regionProps("Traps")}
             />
 
             {/* Lats */}
             <path
               d="M36 66 Q34 80 36 95 Q48 100 60 98 Q60 80 50 66Z"
-              {...regionProps("Back")}
+              {...regionProps("Lats")}
             />
             <path
               d="M84 66 Q86 80 84 95 Q72 100 60 98 Q60 80 70 66Z"
-              {...regionProps("Back")}
+              {...regionProps("Lats")}
             />
 
             {/* Triceps */}
@@ -175,13 +175,13 @@ export default function MuscleHeatmap({
             />
 
             {/* Forearms */}
-            <path d="M16 102 Q13 120 14 138 Q20 140 22 138 Q24 120 24 102Z" fill="#F3F4F6" stroke="#D1D5DB" strokeWidth={0.5} />
-            <path d="M104 102 Q107 120 106 138 Q100 140 98 138 Q96 120 96 102Z" fill="#F3F4F6" stroke="#D1D5DB" strokeWidth={0.5} />
+            <path d="M16 102 Q13 120 14 138 Q20 140 22 138 Q24 120 24 102Z" {...regionProps("Forearms")} />
+            <path d="M104 102 Q107 120 106 138 Q100 140 98 138 Q96 120 96 102Z" {...regionProps("Forearms")} />
 
             {/* Lower Back */}
             <path
               d="M42 96 Q60 100 78 96 L78 110 Q60 114 42 110Z"
-              {...regionProps("Back")}
+              {...regionProps("Lower Back")}
             />
 
             {/* Glutes */}
@@ -194,17 +194,17 @@ export default function MuscleHeatmap({
               {...regionProps("Glutes")}
             />
 
-            {/* Hamstrings (Legs back) */}
+            {/* Hamstrings (back upper leg) */}
             <path
               d="M36 132 Q34 155 34 185 Q44 188 50 185 Q52 155 54 132Z"
-              {...regionProps("Legs")}
+              {...regionProps("Hamstrings")}
             />
             <path
               d="M84 132 Q86 155 86 185 Q76 188 70 185 Q68 155 66 132Z"
-              {...regionProps("Legs")}
+              {...regionProps("Hamstrings")}
             />
 
-            {/* Calves (back) */}
+            {/* Calves (back lower leg) */}
             <path d="M34 190 Q33 215 34 240 Q42 242 46 240 Q48 215 48 190Z" {...regionProps("Calves")} />
             <path d="M86 190 Q87 215 86 240 Q78 242 74 240 Q72 215 72 190Z" {...regionProps("Calves")} />
           </svg>
