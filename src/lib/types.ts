@@ -1,3 +1,20 @@
+export type MuscleGroup =
+  | "Chest"
+  | "Back"
+  | "Shoulders"
+  | "Biceps"
+  | "Triceps"
+  | "Legs"
+  | "Glutes"
+  | "Core"
+  | "Full Body";
+
+export interface LibraryExercise {
+  id: string;
+  name: string;
+  muscleGroup: MuscleGroup;
+}
+
 export interface WorkoutSet {
   id: string;
   reps: number;
@@ -9,6 +26,8 @@ export interface Exercise {
   name: string;
   notes: string;
   sets: WorkoutSet[];
+  muscleGroup?: MuscleGroup;
+  libraryExerciseId?: string;
 }
 
 export interface Workout {
@@ -16,5 +35,21 @@ export interface Workout {
   date: string;
   title: string;
   exercises: Exercise[];
+  createdAt: string;
+}
+
+export interface RoutineExercise {
+  id: string;
+  name: string;
+  muscleGroup?: MuscleGroup;
+  libraryExerciseId?: string;
+  targetSets: number;
+  targetReps: number;
+}
+
+export interface Routine {
+  id: string;
+  name: string;
+  exercises: RoutineExercise[];
   createdAt: string;
 }
