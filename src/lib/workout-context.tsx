@@ -1,16 +1,20 @@
 "use client";
 
 import { createContext, useContext, useReducer, ReactNode } from "react";
-import { Workout } from "./types";
-import { seedWorkouts } from "./seed-data";
+import { Workout, Routine } from "./types";
+import { seedWorkouts, seedRoutines } from "./seed-data";
 
 type WorkoutAction =
   | { type: "ADD_WORKOUT"; payload: Workout }
   | { type: "DELETE_WORKOUT"; payload: { id: string } }
-  | { type: "UPDATE_WORKOUT"; payload: Workout };
+  | { type: "UPDATE_WORKOUT"; payload: Workout }
+  | { type: "ADD_ROUTINE"; payload: Routine }
+  | { type: "DELETE_ROUTINE"; payload: { id: string } }
+  | { type: "UPDATE_ROUTINE"; payload: Routine };
 
 interface WorkoutState {
   workouts: Workout[];
+  routines: Routine[];
 }
 
 function workoutReducer(
@@ -32,6 +36,20 @@ function workoutReducer(
           w.id === action.payload.id ? action.payload : w
         ),
       };
+    case "ADD_ROUTINE":
+      return { ...state, routines: [action.payload, ...state.routines] };
+    case "DELETE_ROUTINE":
+      return {
+        ...state,
+        routines: state.routines.filter((r) => r.id !== action.payload.id),
+      };
+    case "UPDATE_ROUTINE":
+      return {
+        ...state,
+        routines: state.routines.map((r) =>
+          r.id === action.payload.id ? action.payload : r
+        ),
+      };
     default:
       return state;
   }
@@ -45,6 +63,7 @@ const WorkoutContext = createContext<{
 export function WorkoutProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(workoutReducer, {
     workouts: seedWorkouts,
+    routines: seedRoutines,
   });
 
   return (
