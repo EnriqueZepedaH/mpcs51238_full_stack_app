@@ -1,17 +1,67 @@
 import { LibraryExercise, MuscleGroup } from "./types";
 
-export const MUSCLE_GROUPS: MuscleGroup[] = [
+export const MUSCLE_HIERARCHY: Record<string, Record<string, MuscleGroup[]>> = {
+  "Upper Body": {
+    Chest: ["Chest"],
+    Back: ["Traps", "Lats", "Lower Back"],
+    Shoulders: ["Shoulders"],
+    Arms: ["Biceps", "Triceps", "Forearms"],
+  },
+  "Lower Body": {
+    Legs: ["Quads", "Hamstrings", "Calves"],
+    Glutes: ["Glutes"],
+  },
+  Core: {
+    Core: ["Core"],
+  },
+};
+
+export const ALL_MUSCLE_GROUPS: MuscleGroup[] = [
   "Chest",
-  "Back",
+  "Traps",
+  "Lats",
+  "Lower Back",
   "Shoulders",
   "Biceps",
   "Triceps",
-  "Legs",
+  "Forearms",
+  "Quads",
+  "Hamstrings",
   "Calves",
   "Glutes",
   "Core",
   "Full Body",
 ];
+
+// Mid-level category labels for filter pills
+export const MID_LEVEL_GROUPS = [
+  "Chest",
+  "Back",
+  "Shoulders",
+  "Arms",
+  "Legs",
+  "Glutes",
+  "Core",
+] as const;
+
+export function getMuscleGroupsIn(category: string): MuscleGroup[] {
+  // Check if it's a top-level key
+  if (category in MUSCLE_HIERARCHY) {
+    const mid = MUSCLE_HIERARCHY[category];
+    return Object.values(mid).flat();
+  }
+  // Check if it's a mid-level key
+  for (const top of Object.values(MUSCLE_HIERARCHY)) {
+    if (category in top) {
+      return top[category];
+    }
+  }
+  // Check if it's already a leaf
+  if (ALL_MUSCLE_GROUPS.includes(category as MuscleGroup)) {
+    return [category as MuscleGroup];
+  }
+  return [];
+}
 
 export const exerciseLibrary: LibraryExercise[] = [
   // Chest
@@ -22,19 +72,23 @@ export const exerciseLibrary: LibraryExercise[] = [
   { id: "cable-crossover", name: "Cable Crossover", muscleGroup: "Chest" },
   { id: "push-ups", name: "Push-ups", muscleGroup: "Chest" },
 
-  // Back
-  { id: "deadlift", name: "Deadlift", muscleGroup: "Back" },
-  { id: "barbell-row", name: "Barbell Row", muscleGroup: "Back" },
-  { id: "pull-ups", name: "Pull-ups", muscleGroup: "Back" },
-  { id: "lat-pulldown", name: "Lat Pulldown", muscleGroup: "Back" },
-  { id: "seated-cable-row", name: "Seated Cable Row", muscleGroup: "Back" },
-  { id: "t-bar-row", name: "T-Bar Row", muscleGroup: "Back" },
+  // Back — Traps
+  { id: "face-pull", name: "Face Pull", muscleGroup: "Traps" },
+
+  // Back — Lats
+  { id: "barbell-row", name: "Barbell Row", muscleGroup: "Lats" },
+  { id: "pull-ups", name: "Pull-ups", muscleGroup: "Lats" },
+  { id: "lat-pulldown", name: "Lat Pulldown", muscleGroup: "Lats" },
+  { id: "seated-cable-row", name: "Seated Cable Row", muscleGroup: "Lats" },
+  { id: "t-bar-row", name: "T-Bar Row", muscleGroup: "Lats" },
+
+  // Back — Lower Back
+  { id: "deadlift", name: "Deadlift", muscleGroup: "Lower Back" },
 
   // Shoulders
   { id: "overhead-press", name: "Overhead Press", muscleGroup: "Shoulders" },
   { id: "lateral-raise", name: "Lateral Raise", muscleGroup: "Shoulders" },
   { id: "front-raise", name: "Front Raise", muscleGroup: "Shoulders" },
-  { id: "face-pull", name: "Face Pull", muscleGroup: "Shoulders" },
   { id: "arnold-press", name: "Arnold Press", muscleGroup: "Shoulders" },
 
   // Biceps
@@ -49,15 +103,19 @@ export const exerciseLibrary: LibraryExercise[] = [
   { id: "overhead-tricep-extension", name: "Overhead Tricep Extension", muscleGroup: "Triceps" },
   { id: "close-grip-bench-press", name: "Close-Grip Bench Press", muscleGroup: "Triceps" },
 
-  // Legs
-  { id: "squat", name: "Squat", muscleGroup: "Legs" },
-  { id: "front-squat", name: "Front Squat", muscleGroup: "Legs" },
-  { id: "leg-press", name: "Leg Press", muscleGroup: "Legs" },
-  { id: "romanian-deadlift", name: "Romanian Deadlift", muscleGroup: "Legs" },
-  { id: "leg-extension", name: "Leg Extension", muscleGroup: "Legs" },
-  { id: "leg-curl", name: "Leg Curl", muscleGroup: "Legs" },
+  // Legs — Quads
+  { id: "squat", name: "Squat", muscleGroup: "Quads" },
+  { id: "front-squat", name: "Front Squat", muscleGroup: "Quads" },
+  { id: "leg-press", name: "Leg Press", muscleGroup: "Quads" },
+  { id: "leg-extension", name: "Leg Extension", muscleGroup: "Quads" },
+  { id: "bulgarian-split-squat", name: "Bulgarian Split Squat", muscleGroup: "Quads" },
+
+  // Legs — Hamstrings
+  { id: "romanian-deadlift", name: "Romanian Deadlift", muscleGroup: "Hamstrings" },
+  { id: "leg-curl", name: "Leg Curl", muscleGroup: "Hamstrings" },
+
+  // Legs — Calves
   { id: "calf-raise", name: "Calf Raise", muscleGroup: "Calves" },
-  { id: "bulgarian-split-squat", name: "Bulgarian Split Squat", muscleGroup: "Legs" },
 
   // Glutes
   { id: "hip-thrust", name: "Hip Thrust", muscleGroup: "Glutes" },
@@ -80,12 +138,15 @@ export const exerciseLibrary: LibraryExercise[] = [
 
 export function searchExercises(
   query: string,
-  muscleGroup?: MuscleGroup
+  category?: string
 ): LibraryExercise[] {
   let results = exerciseLibrary;
 
-  if (muscleGroup) {
-    results = results.filter((e) => e.muscleGroup === muscleGroup);
+  if (category) {
+    const leafGroups = getMuscleGroupsIn(category);
+    if (leafGroups.length > 0) {
+      results = results.filter((e) => leafGroups.includes(e.muscleGroup));
+    }
   }
 
   if (query.trim()) {

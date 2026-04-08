@@ -54,7 +54,7 @@ export const seedWorkouts: Workout[] = [
         id: "e4",
         name: "Squat",
         notes: "New PR!",
-        muscleGroup: "Legs",
+        muscleGroup: "Quads",
         libraryExerciseId: "squat",
         sets: [
           { id: "s9", reps: 5, weight: 275 },
@@ -66,7 +66,7 @@ export const seedWorkouts: Workout[] = [
         id: "e5",
         name: "Romanian Deadlift",
         notes: "",
-        muscleGroup: "Legs",
+        muscleGroup: "Hamstrings",
         libraryExerciseId: "romanian-deadlift",
         sets: [
           { id: "s12", reps: 10, weight: 185 },
@@ -78,7 +78,7 @@ export const seedWorkouts: Workout[] = [
         id: "e6",
         name: "Leg Press",
         notes: "",
-        muscleGroup: "Legs",
+        muscleGroup: "Quads",
         libraryExerciseId: "leg-press",
         sets: [
           { id: "s15", reps: 12, weight: 360 },
@@ -97,7 +97,7 @@ export const seedWorkouts: Workout[] = [
         id: "e7",
         name: "Deadlift",
         notes: "",
-        muscleGroup: "Back",
+        muscleGroup: "Lower Back",
         libraryExerciseId: "deadlift",
         sets: [
           { id: "s17", reps: 5, weight: 315 },
@@ -109,7 +109,7 @@ export const seedWorkouts: Workout[] = [
         id: "e8",
         name: "Barbell Row",
         notes: "Focus on form",
-        muscleGroup: "Back",
+        muscleGroup: "Lats",
         libraryExerciseId: "barbell-row",
         sets: [
           { id: "s20", reps: 8, weight: 155 },
@@ -121,7 +121,7 @@ export const seedWorkouts: Workout[] = [
         id: "e9",
         name: "Pull-ups",
         notes: "",
-        muscleGroup: "Back",
+        muscleGroup: "Lats",
         libraryExerciseId: "pull-ups",
         sets: [
           { id: "s23", reps: 10, weight: 0 },
@@ -182,9 +182,9 @@ export const seedRoutines: Routine[] = [
     name: "Pull Day",
     createdAt: "2026-04-01T00:00:00Z",
     exercises: [
-      { id: "re6", name: "Deadlift", muscleGroup: "Back", libraryExerciseId: "deadlift", targetSets: 3, targetReps: 5 },
-      { id: "re7", name: "Barbell Row", muscleGroup: "Back", libraryExerciseId: "barbell-row", targetSets: 3, targetReps: 8 },
-      { id: "re8", name: "Pull-ups", muscleGroup: "Back", libraryExerciseId: "pull-ups", targetSets: 3, targetReps: 10 },
+      { id: "re6", name: "Deadlift", muscleGroup: "Lower Back", libraryExerciseId: "deadlift", targetSets: 3, targetReps: 5 },
+      { id: "re7", name: "Barbell Row", muscleGroup: "Lats", libraryExerciseId: "barbell-row", targetSets: 3, targetReps: 8 },
+      { id: "re8", name: "Pull-ups", muscleGroup: "Lats", libraryExerciseId: "pull-ups", targetSets: 3, targetReps: 10 },
       { id: "re9", name: "Barbell Curl", muscleGroup: "Biceps", libraryExerciseId: "barbell-curl", targetSets: 3, targetReps: 10 },
     ],
   },
@@ -193,9 +193,9 @@ export const seedRoutines: Routine[] = [
     name: "Leg Day",
     createdAt: "2026-04-01T00:00:00Z",
     exercises: [
-      { id: "re10", name: "Squat", muscleGroup: "Legs", libraryExerciseId: "squat", targetSets: 3, targetReps: 5 },
-      { id: "re11", name: "Romanian Deadlift", muscleGroup: "Legs", libraryExerciseId: "romanian-deadlift", targetSets: 3, targetReps: 10 },
-      { id: "re12", name: "Leg Press", muscleGroup: "Legs", libraryExerciseId: "leg-press", targetSets: 3, targetReps: 12 },
+      { id: "re10", name: "Squat", muscleGroup: "Quads", libraryExerciseId: "squat", targetSets: 3, targetReps: 5 },
+      { id: "re11", name: "Romanian Deadlift", muscleGroup: "Hamstrings", libraryExerciseId: "romanian-deadlift", targetSets: 3, targetReps: 10 },
+      { id: "re12", name: "Leg Press", muscleGroup: "Quads", libraryExerciseId: "leg-press", targetSets: 3, targetReps: 12 },
       { id: "re13", name: "Calf Raise", muscleGroup: "Calves", libraryExerciseId: "calf-raise", targetSets: 4, targetReps: 15 },
     ],
   },

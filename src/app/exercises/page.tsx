@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { MuscleGroup } from "@/lib/types";
-import { MUSCLE_GROUPS, searchExercises } from "@/lib/exercise-library";
+import { MID_LEVEL_GROUPS, searchExercises } from "@/lib/exercise-library";
 import PageHeader from "@/components/page-header";
 import MuscleGroupBadge from "@/components/muscle-group-badge";
 
 export default function ExercisesPage() {
-  const [selectedGroup, setSelectedGroup] = useState<MuscleGroup | undefined>(
+  const [selectedGroup, setSelectedGroup] = useState<string | undefined>(
     undefined
   );
   const [query, setQuery] = useState("");
@@ -40,7 +39,7 @@ export default function ExercisesPage() {
         >
           All
         </button>
-        {MUSCLE_GROUPS.map((group) => (
+        {MID_LEVEL_GROUPS.map((group) => (
           <button
             key={group}
             onClick={() =>

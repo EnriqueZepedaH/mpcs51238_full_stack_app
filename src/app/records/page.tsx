@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { MuscleGroup } from "@/lib/types";
-import { MUSCLE_GROUPS } from "@/lib/exercise-library";
+import { MID_LEVEL_GROUPS, getMuscleGroupsIn } from "@/lib/exercise-library";
 import { useWorkouts } from "@/lib/workout-context";
 import {
   getPersonalRecords,
@@ -19,13 +18,16 @@ export default function RecordsPage() {
   const weeklySummaries = getWeeklySummaries(state.workouts);
   const maxVolume = Math.max(...weeklySummaries.map((w) => w.totalVolume), 1);
 
-  const [muscleFilter, setMuscleFilter] = useState<MuscleGroup | undefined>();
+  const [muscleFilter, setMuscleFilter] = useState<string | undefined>();
   const [nameFilter, setNameFilter] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
   const records = allRecords.filter((r) => {
-    if (muscleFilter && r.muscleGroup !== muscleFilter) return false;
+    if (muscleFilter) {
+      const leafGroups = getMuscleGroupsIn(muscleFilter);
+      if (!r.muscleGroup || !leafGroups.includes(r.muscleGroup)) return false;
+    }
     if (nameFilter && !r.exerciseName.toLowerCase().includes(nameFilter.toLowerCase())) return false;
     if (dateFrom && r.date < dateFrom) return false;
     if (dateTo && r.date > dateTo) return false;
@@ -53,7 +55,7 @@ export default function RecordsPage() {
           >
             All
           </button>
-          {MUSCLE_GROUPS.map((group) => (
+          {MID_LEVEL_GROUPS.map((group) => (
             <button
               key={group}
               onClick={() =>
