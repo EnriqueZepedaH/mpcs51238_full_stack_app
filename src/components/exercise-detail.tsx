@@ -1,4 +1,5 @@
 import { Exercise } from "@/lib/types";
+import MuscleGroupBadge from "./muscle-group-badge";
 
 export default function ExerciseDetail({
   exercise,
@@ -20,6 +21,9 @@ export default function ExerciseDetail({
             {index + 1}
           </span>
           <h3 className="font-medium text-gray-900">{exercise.name}</h3>
+          {exercise.muscleGroup && (
+            <MuscleGroupBadge muscleGroup={exercise.muscleGroup} />
+          )}
         </div>
         <span className="text-sm text-gray-500">
           {totalVolume.toLocaleString()} lbs

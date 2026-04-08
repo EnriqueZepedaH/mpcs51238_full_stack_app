@@ -1,7 +1,9 @@
 "use client";
 
-import { Exercise, WorkoutSet } from "@/lib/types";
+import { Exercise, MuscleGroup, WorkoutSet } from "@/lib/types";
 import SetInputRow from "./set-input-row";
+import ExerciseCombobox from "./exercise-combobox";
+import MuscleGroupBadge from "./muscle-group-badge";
 
 export default function ExerciseForm({
   exercise,
@@ -44,15 +46,18 @@ export default function ExerciseForm({
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-xs font-medium text-gray-600">
               {index + 1}
             </span>
-            <input
-              type="text"
-              placeholder="Exercise name"
-              value={exercise.name}
-              onChange={(e) =>
-                onChange({ ...exercise, name: e.target.value })
-              }
-              className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-900 placeholder:text-gray-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-gray-900"
-            />
+            <div className="flex-1">
+              <ExerciseCombobox
+                value={exercise.name}
+                onChange={(name: string, muscleGroup?: MuscleGroup, libraryExerciseId?: string) =>
+                  onChange({ ...exercise, name, muscleGroup, libraryExerciseId })
+                }
+                placeholder="Search exercises..."
+              />
+            </div>
+            {exercise.muscleGroup && (
+              <MuscleGroupBadge muscleGroup={exercise.muscleGroup} />
+            )}
           </div>
           <input
             type="text"
