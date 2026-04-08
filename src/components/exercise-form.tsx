@@ -1,6 +1,7 @@
 "use client";
 
-import { Exercise, MuscleGroup, WorkoutSet } from "@/lib/types";
+import { Exercise, MuscleGroup, Workout, WorkoutSet } from "@/lib/types";
+import { getPRWeight } from "@/lib/utils";
 import SetInputRow from "./set-input-row";
 import ExerciseCombobox from "./exercise-combobox";
 import MuscleGroupBadge from "./muscle-group-badge";
@@ -10,17 +11,24 @@ export default function ExerciseForm({
   index,
   onChange,
   onRemove,
+  workouts,
 }: {
   exercise: Exercise;
   index: number;
   onChange: (updated: Exercise) => void;
   onRemove: () => void;
+  workouts?: Workout[];
 }) {
+  const prWeight = workouts && exercise.name
+    ? getPRWeight(workouts, exercise.name)
+    : undefined;
+  const suggestedWeight = prWeight ? Math.round(prWeight * 0.75) : undefined;
+
   function addSet() {
     const newSet: WorkoutSet = {
       id: crypto.randomUUID(),
       reps: 0,
-      weight: 0,
+      weight: suggestedWeight || 0,
     };
     onChange({ ...exercise, sets: [...exercise.sets, newSet] });
   }
@@ -38,6 +46,29 @@ export default function ExerciseForm({
     });
   }
 
+  function handleExerciseSelect(
+    name: string,
+    muscleGroup?: MuscleGroup,
+    libraryExerciseId?: string
+  ) {
+    const pr = workouts && name ? getPRWeight(workouts, name) : undefined;
+    const suggested = pr ? Math.round(pr * 0.75) : undefined;
+
+    const updatedSets = suggested
+      ? exercise.sets.map((set) =>
+          set.weight === 0 ? { ...set, weight: suggested } : set
+        )
+      : exercise.sets;
+
+    onChange({
+      ...exercise,
+      name,
+      muscleGroup,
+      libraryExerciseId,
+      sets: updatedSets,
+    });
+  }
+
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-5">
       <div className="flex items-start justify-between">
@@ -49,9 +80,7 @@ export default function ExerciseForm({
             <div className="flex-1">
               <ExerciseCombobox
                 value={exercise.name}
-                onChange={(name: string, muscleGroup?: MuscleGroup, libraryExerciseId?: string) =>
-                  onChange({ ...exercise, name, muscleGroup, libraryExerciseId })
-                }
+                onChange={handleExerciseSelect}
                 placeholder="Search exercises..."
               />
             </div>
@@ -59,6 +88,11 @@ export default function ExerciseForm({
               <MuscleGroupBadge muscleGroup={exercise.muscleGroup} />
             )}
           </div>
+          {prWeight !== undefined && prWeight > 0 && (
+            <p className="text-xs text-gray-400">
+              PR: {prWeight} lbs &middot; Suggested: {suggestedWeight} lbs (75%)
+            </p>
+          )}
           <input
             type="text"
             placeholder="Notes (optional)"

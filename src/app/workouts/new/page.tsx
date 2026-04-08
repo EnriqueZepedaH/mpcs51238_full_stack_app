@@ -127,6 +127,7 @@ function NewWorkoutForm() {
                 key={exercise.id}
                 exercise={exercise}
                 index={index}
+                workouts={state.workouts}
                 onChange={(updated) => updateExercise(index, updated)}
                 onRemove={() => removeExercise(index)}
               />
