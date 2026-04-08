@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -11,49 +12,114 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <aside className="flex h-screen w-60 flex-col border-r border-gray-200 bg-white">
-      <div className="flex items-center gap-2 px-5 py-5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-900 text-white text-sm font-bold">
-          W
+    <>
+      {/* Mobile top bar */}
+      <div className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 md:hidden">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-900 text-white text-sm font-bold">
+            W
+          </div>
+          <span className="text-lg font-semibold text-gray-900">
+            Workout Tracker
+          </span>
         </div>
-        <span className="text-lg font-semibold text-gray-900">
-          Workout Tracker
-        </span>
-      </div>
-
-      <nav className="flex flex-1 flex-col gap-1 px-3 py-2">
-        {navItems.map(({ href, label, icon: Icon }) => {
-          const isActive =
-            href === "/" ? pathname === "/" : pathname.startsWith(href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                isActive
-                  ? "bg-gray-100 text-gray-900"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-              }`}
-            >
-              <Icon className="h-4 w-4" />
-              {label}
-            </Link>
-          );
-        })}
-      </nav>
-
-      <div className="border-t border-gray-200 p-3">
-        <Link
-          href="/workouts/new"
-          className="flex w-full items-center justify-center gap-2 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800"
+        <button
+          onClick={() => setMobileOpen(!mobileOpen)}
+          className="rounded-md p-2 text-gray-600 hover:bg-gray-100"
         >
-          <PlusIcon className="h-4 w-4" />
-          Log Workout
-        </Link>
+          {mobileOpen ? (
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          ) : (
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+          )}
+        </button>
       </div>
-    </aside>
+
+      {/* Mobile dropdown nav */}
+      {mobileOpen && (
+        <div className="border-b border-gray-200 bg-white px-4 pb-3 md:hidden">
+          <nav className="flex flex-col gap-1">
+            {navItems.map(({ href, label, icon: Icon }) => {
+              const isActive =
+                href === "/" ? pathname === "/" : pathname.startsWith(href);
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  onClick={() => setMobileOpen(false)}
+                  className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-gray-100 text-gray-900"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {label}
+                </Link>
+              );
+            })}
+            <Link
+              href="/workouts/new"
+              onClick={() => setMobileOpen(false)}
+              className="mt-1 flex items-center justify-center gap-2 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800"
+            >
+              <PlusIcon className="h-4 w-4" />
+              Log Workout
+            </Link>
+          </nav>
+        </div>
+      )}
+
+      {/* Desktop sidebar */}
+      <aside className="hidden h-screen w-60 flex-col border-r border-gray-200 bg-white md:flex">
+        <div className="flex items-center gap-2 px-5 py-5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-900 text-white text-sm font-bold">
+            W
+          </div>
+          <span className="text-lg font-semibold text-gray-900">
+            Workout Tracker
+          </span>
+        </div>
+
+        <nav className="flex flex-1 flex-col gap-1 px-3 py-2">
+          {navItems.map(({ href, label, icon: Icon }) => {
+            const isActive =
+              href === "/" ? pathname === "/" : pathname.startsWith(href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                  isActive
+                    ? "bg-gray-100 text-gray-900"
+                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                {label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="border-t border-gray-200 p-3">
+          <Link
+            href="/workouts/new"
+            className="flex w-full items-center justify-center gap-2 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800"
+          >
+            <PlusIcon className="h-4 w-4" />
+            Log Workout
+          </Link>
+        </div>
+      </aside>
+    </>
   );
 }
 
