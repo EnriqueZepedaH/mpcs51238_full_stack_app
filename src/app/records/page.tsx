@@ -8,6 +8,7 @@ import {
   formatDate,
 } from "@/lib/utils";
 import PageHeader from "@/components/page-header";
+import MuscleGroupBadge from "@/components/muscle-group-badge";
 
 export default function RecordsPage() {
   const { state } = useWorkouts();
@@ -51,12 +52,17 @@ export default function RecordsPage() {
                 {records.map((record) => (
                   <tr key={record.exerciseName} className="hover:bg-gray-50">
                     <td className="px-5 py-3.5">
-                      <Link
-                        href={`/workouts/${record.workoutId}`}
-                        className="font-medium text-gray-900 hover:text-gray-600"
-                      >
-                        {record.exerciseName}
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/workouts/${record.workoutId}`}
+                          className="font-medium text-gray-900 hover:text-gray-600"
+                        >
+                          {record.exerciseName}
+                        </Link>
+                        {record.muscleGroup && (
+                          <MuscleGroupBadge muscleGroup={record.muscleGroup} />
+                        )}
+                      </div>
                     </td>
                     <td className="px-5 py-3.5 text-right">
                       <span className="font-semibold text-emerald-600">

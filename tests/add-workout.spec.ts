@@ -4,7 +4,7 @@ test("add a new workout via form", async ({ page }) => {
   await page.goto("/workouts/new");
 
   await page.getByPlaceholder("e.g. Upper Body Push").fill("Test Workout");
-  await page.getByPlaceholder("Exercise name").fill("Bench Press");
+  await page.getByPlaceholder("Search exercises...").fill("Bench Press");
   await page.getByPlaceholder("Reps").fill("10");
   await page.getByPlaceholder("Weight (lbs)").fill("135");
 
@@ -22,7 +22,7 @@ test("new workout appears in workouts list", async ({ page }) => {
   await page.goto("/workouts/new");
 
   await page.getByPlaceholder("e.g. Upper Body Push").fill("My New Session");
-  await page.getByPlaceholder("Exercise name").fill("Squat");
+  await page.getByPlaceholder("Search exercises...").fill("Squat");
   await page.getByPlaceholder("Reps").fill("5");
   await page.getByPlaceholder("Weight (lbs)").fill("225");
 

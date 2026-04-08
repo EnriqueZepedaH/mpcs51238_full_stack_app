@@ -1,4 +1,4 @@
-import { Workout, Exercise } from "./types";
+import { Workout, Exercise, MuscleGroup } from "./types";
 
 export function calcVolume(exercises: Exercise[]): number {
   return exercises.reduce(
@@ -29,6 +29,7 @@ export function formatDateLong(dateStr: string): string {
 
 export interface PersonalRecord {
   exerciseName: string;
+  muscleGroup?: MuscleGroup;
   maxWeight: number;
   reps: number;
   date: string;
@@ -45,6 +46,7 @@ export function getPersonalRecords(workouts: Workout[]): PersonalRecord[] {
         if (!existing || set.weight > existing.maxWeight) {
           records.set(exercise.name, {
             exerciseName: exercise.name,
+            muscleGroup: exercise.muscleGroup,
             maxWeight: set.weight,
             reps: set.reps,
             date: workout.date,
