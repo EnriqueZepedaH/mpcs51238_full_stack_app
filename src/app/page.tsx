@@ -5,6 +5,7 @@ import { useWorkouts } from "@/lib/workout-context";
 import { calcVolume, formatDate, getThisWeekWorkouts } from "@/lib/utils";
 import StatsCard from "@/components/stats-card";
 import PageHeader from "@/components/page-header";
+import MuscleHeatmap from "@/components/muscle-heatmap";
 
 export default function DashboardPage() {
   const { state } = useWorkouts();
@@ -42,6 +43,12 @@ export default function DashboardPage() {
           subtext="lbs lifted"
         />
       </div>
+
+      {thisWeek.length > 0 && (
+        <MuscleHeatmap
+          exercises={thisWeek.flatMap((w) => w.exercises)}
+        />
+      )}
 
       <div>
         <div className="flex items-center justify-between">

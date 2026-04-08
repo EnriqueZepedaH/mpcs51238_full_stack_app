@@ -126,6 +126,18 @@ export function getPRWeight(
   return max;
 }
 
+export function getMuscleGroupVolumes(
+  exercises: Exercise[]
+): Record<string, number> {
+  const volumes: Record<string, number> = {};
+  for (const ex of exercises) {
+    if (!ex.muscleGroup) continue;
+    const vol = ex.sets.reduce((sum, s) => sum + s.weight * s.reps, 0);
+    volumes[ex.muscleGroup] = (volumes[ex.muscleGroup] || 0) + vol;
+  }
+  return volumes;
+}
+
 export function getThisWeekWorkouts(workouts: Workout[]): Workout[] {
   const now = new Date();
   const monday = new Date(now);

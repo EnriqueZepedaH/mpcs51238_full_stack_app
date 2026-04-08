@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useWorkouts } from "@/lib/workout-context";
 import { calcVolume, formatDateLong } from "@/lib/utils";
 import ExerciseDetail from "@/components/exercise-detail";
+import MuscleHeatmap from "@/components/muscle-heatmap";
 
 export default function WorkoutDetailPage({
   params,
@@ -120,6 +121,8 @@ export default function WorkoutDetailPage({
           <p className="text-xs text-gray-500">lbs volume</p>
         </div>
       </div>
+
+      <MuscleHeatmap exercises={workout.exercises} />
 
       <div className="space-y-4">
         <h2 className="text-lg font-medium text-gray-900">Exercises</h2>
