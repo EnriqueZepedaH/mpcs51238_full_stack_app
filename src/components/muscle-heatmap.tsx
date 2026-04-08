@@ -128,9 +128,9 @@ export default function MuscleHeatmap({
               {...regionProps("Legs")}
             />
 
-            {/* Shins */}
-            <path d="M34 190 Q33 215 34 240 Q42 242 46 240 Q48 215 48 190Z" fill="#F3F4F6" stroke="#D1D5DB" strokeWidth={0.5} />
-            <path d="M86 190 Q87 215 86 240 Q78 242 74 240 Q72 215 72 190Z" fill="#F3F4F6" stroke="#D1D5DB" strokeWidth={0.5} />
+            {/* Calves (front/shin) */}
+            <path d="M34 190 Q33 215 34 240 Q42 242 46 240 Q48 215 48 190Z" {...regionProps("Calves")} />
+            <path d="M86 190 Q87 215 86 240 Q78 242 74 240 Q72 215 72 190Z" {...regionProps("Calves")} />
           </svg>
           <p className="mt-1 text-xs text-gray-400">Front</p>
         </div>
@@ -204,9 +204,9 @@ export default function MuscleHeatmap({
               {...regionProps("Legs")}
             />
 
-            {/* Calves */}
-            <path d="M34 190 Q33 215 34 240 Q42 242 46 240 Q48 215 48 190Z" fill="#F3F4F6" stroke="#D1D5DB" strokeWidth={0.5} />
-            <path d="M86 190 Q87 215 86 240 Q78 242 74 240 Q72 215 72 190Z" fill="#F3F4F6" stroke="#D1D5DB" strokeWidth={0.5} />
+            {/* Calves (back) */}
+            <path d="M34 190 Q33 215 34 240 Q42 242 46 240 Q48 215 48 190Z" {...regionProps("Calves")} />
+            <path d="M86 190 Q87 215 86 240 Q78 242 74 240 Q72 215 72 190Z" {...regionProps("Calves")} />
           </svg>
           <p className="mt-1 text-xs text-gray-400">Back</p>
         </div>

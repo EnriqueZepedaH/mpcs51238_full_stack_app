@@ -196,7 +196,7 @@ export const seedRoutines: Routine[] = [
       { id: "re10", name: "Squat", muscleGroup: "Legs", libraryExerciseId: "squat", targetSets: 3, targetReps: 5 },
       { id: "re11", name: "Romanian Deadlift", muscleGroup: "Legs", libraryExerciseId: "romanian-deadlift", targetSets: 3, targetReps: 10 },
       { id: "re12", name: "Leg Press", muscleGroup: "Legs", libraryExerciseId: "leg-press", targetSets: 3, targetReps: 12 },
-      { id: "re13", name: "Calf Raise", muscleGroup: "Legs", libraryExerciseId: "calf-raise", targetSets: 4, targetReps: 15 },
+      { id: "re13", name: "Calf Raise", muscleGroup: "Calves", libraryExerciseId: "calf-raise", targetSets: 4, targetReps: 15 },
     ],
   },
 ];

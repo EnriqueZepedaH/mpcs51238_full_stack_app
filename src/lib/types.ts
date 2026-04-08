@@ -5,6 +5,7 @@ export type MuscleGroup =
   | "Biceps"
   | "Triceps"
   | "Legs"
+  | "Calves"
   | "Glutes"
   | "Core"
   | "Full Body";

@@ -7,6 +7,7 @@ export const MUSCLE_GROUPS: MuscleGroup[] = [
   "Biceps",
   "Triceps",
   "Legs",
+  "Calves",
   "Glutes",
   "Core",
   "Full Body",
@@ -55,7 +56,7 @@ export const exerciseLibrary: LibraryExercise[] = [
   { id: "romanian-deadlift", name: "Romanian Deadlift", muscleGroup: "Legs" },
   { id: "leg-extension", name: "Leg Extension", muscleGroup: "Legs" },
   { id: "leg-curl", name: "Leg Curl", muscleGroup: "Legs" },
-  { id: "calf-raise", name: "Calf Raise", muscleGroup: "Legs" },
+  { id: "calf-raise", name: "Calf Raise", muscleGroup: "Calves" },
   { id: "bulgarian-split-squat", name: "Bulgarian Split Squat", muscleGroup: "Legs" },
 
   // Glutes

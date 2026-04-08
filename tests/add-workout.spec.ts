@@ -33,5 +33,5 @@ test("new workout appears in workouts list", async ({ page }) => {
 
   // Navigate to workouts list
   await page.getByRole("link", { name: "Workouts" }).first().click();
-  await expect(page.getByText("My New Session")).toBeVisible();
+  await expect(page.getByText("My New Session").first()).toBeVisible();
 });
