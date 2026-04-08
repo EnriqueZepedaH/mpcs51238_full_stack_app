@@ -1,37 +1,52 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useWorkouts } from "@/lib/workout-context";
 import { Exercise, Workout } from "@/lib/types";
 import ExerciseForm from "@/components/exercise-form";
 import PageHeader from "@/components/page-header";
 
-export default function NewWorkoutPage() {
-  const router = useRouter();
-  const { dispatch } = useWorkouts();
+function emptyExercise(): Exercise {
+  return {
+    id: crypto.randomUUID(),
+    name: "",
+    notes: "",
+    sets: [{ id: crypto.randomUUID(), reps: 0, weight: 0 }],
+  };
+}
 
-  const [title, setTitle] = useState("");
+function NewWorkoutForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const routineId = searchParams.get("routine");
+  const { state, dispatch } = useWorkouts();
+
+  const routine = routineId
+    ? state.routines.find((r) => r.id === routineId)
+    : null;
+
+  const [title, setTitle] = useState(routine?.name || "");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [exercises, setExercises] = useState<Exercise[]>([
-    {
-      id: crypto.randomUUID(),
-      name: "",
-      notes: "",
-      sets: [{ id: crypto.randomUUID(), reps: 0, weight: 0 }],
-    },
-  ]);
+  const [exercises, setExercises] = useState<Exercise[]>(
+    routine
+      ? routine.exercises.map((re) => ({
+          id: crypto.randomUUID(),
+          name: re.name,
+          notes: "",
+          muscleGroup: re.muscleGroup,
+          libraryExerciseId: re.libraryExerciseId,
+          sets: Array.from({ length: re.targetSets }, () => ({
+            id: crypto.randomUUID(),
+            reps: re.targetReps,
+            weight: 0,
+          })),
+        }))
+      : [emptyExercise()]
+  );
 
   function addExercise() {
-    setExercises([
-      ...exercises,
-      {
-        id: crypto.randomUUID(),
-        name: "",
-        notes: "",
-        sets: [{ id: crypto.randomUUID(), reps: 0, weight: 0 }],
-      },
-    ]);
+    setExercises([...exercises, emptyExercise()]);
   }
 
   function updateExercise(index: number, updated: Exercise) {
@@ -62,7 +77,20 @@ export default function NewWorkoutPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <PageHeader title="Log Workout" subtitle="Record your exercises and sets" />
+      <PageHeader
+        title="Log Workout"
+        subtitle={
+          routine
+            ? `From routine: ${routine.name}`
+            : "Record your exercises and sets"
+        }
+      />
+
+      {routine && (
+        <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
+          Pre-filled from <span className="font-medium text-gray-900">{routine.name}</span> routine. Fill in your weights and adjust as needed.
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -130,5 +158,13 @@ export default function NewWorkoutPage() {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function NewWorkoutPage() {
+  return (
+    <Suspense>
+      <NewWorkoutForm />
+    </Suspense>
   );
 }
