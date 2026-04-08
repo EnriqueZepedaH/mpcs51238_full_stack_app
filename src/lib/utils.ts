@@ -107,6 +107,25 @@ export function getWeeklySummaries(workouts: Workout[]): WeeklySummary[] {
     .map(([, summary]) => summary);
 }
 
+export function getPRWeight(
+  workouts: Workout[],
+  exerciseName: string
+): number | undefined {
+  let max: number | undefined;
+  for (const workout of workouts) {
+    for (const exercise of workout.exercises) {
+      if (exercise.name === exerciseName) {
+        for (const set of exercise.sets) {
+          if (max === undefined || set.weight > max) {
+            max = set.weight;
+          }
+        }
+      }
+    }
+  }
+  return max;
+}
+
 export function getThisWeekWorkouts(workouts: Workout[]): Workout[] {
   const now = new Date();
   const monday = new Date(now);

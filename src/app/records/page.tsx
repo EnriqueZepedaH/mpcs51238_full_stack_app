@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { MuscleGroup } from "@/lib/types";
+import { MUSCLE_GROUPS } from "@/lib/exercise-library";
 import { useWorkouts } from "@/lib/workout-context";
 import {
   getPersonalRecords,
@@ -12,9 +15,24 @@ import MuscleGroupBadge from "@/components/muscle-group-badge";
 
 export default function RecordsPage() {
   const { state } = useWorkouts();
-  const records = getPersonalRecords(state.workouts);
+  const allRecords = getPersonalRecords(state.workouts);
   const weeklySummaries = getWeeklySummaries(state.workouts);
   const maxVolume = Math.max(...weeklySummaries.map((w) => w.totalVolume), 1);
+
+  const [muscleFilter, setMuscleFilter] = useState<MuscleGroup | undefined>();
+  const [nameFilter, setNameFilter] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+
+  const records = allRecords.filter((r) => {
+    if (muscleFilter && r.muscleGroup !== muscleFilter) return false;
+    if (nameFilter && !r.exerciseName.toLowerCase().includes(nameFilter.toLowerCase())) return false;
+    if (dateFrom && r.date < dateFrom) return false;
+    if (dateTo && r.date > dateTo) return false;
+    return true;
+  });
+
+  const hasFilters = muscleFilter || nameFilter || dateFrom || dateTo;
 
   return (
     <div className="space-y-8">
@@ -23,11 +41,89 @@ export default function RecordsPage() {
         subtitle="Your best lifts and weekly progress"
       />
 
+      <div className="space-y-4">
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setMuscleFilter(undefined)}
+            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+              !muscleFilter
+                ? "bg-gray-900 text-white"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
+          >
+            All
+          </button>
+          {MUSCLE_GROUPS.map((group) => (
+            <button
+              key={group}
+              onClick={() =>
+                setMuscleFilter(muscleFilter === group ? undefined : group)
+              }
+              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                muscleFilter === group
+                  ? "bg-gray-900 text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              {group}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <input
+            type="text"
+            placeholder="Search exercise..."
+            value={nameFilter}
+            onChange={(e) => setNameFilter(e.target.value)}
+            className="w-48 rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-gray-900"
+          />
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <span>From</span>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-gray-900"
+            />
+            <span>to</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-gray-900"
+            />
+          </div>
+          {hasFilters && (
+            <button
+              onClick={() => {
+                setMuscleFilter(undefined);
+                setNameFilter("");
+                setDateFrom("");
+                setDateTo("");
+              }}
+              className="text-xs font-medium text-gray-500 hover:text-gray-700"
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
+      </div>
+
       <div>
-        <h2 className="text-lg font-medium text-gray-900">Best Lifts</h2>
+        <h2 className="text-lg font-medium text-gray-900">
+          Best Lifts
+          {hasFilters && (
+            <span className="ml-2 text-sm font-normal text-gray-500">
+              ({records.length} of {allRecords.length})
+            </span>
+          )}
+        </h2>
         {records.length === 0 ? (
           <div className="mt-4 rounded-lg border border-dashed border-gray-300 p-8 text-center">
-            <p className="text-sm text-gray-500">No records yet</p>
+            <p className="text-sm text-gray-500">
+              {hasFilters ? "No records match your filters" : "No records yet"}
+            </p>
           </div>
         ) : (
           <div className="mt-4 overflow-hidden rounded-lg border border-gray-200 bg-white">
