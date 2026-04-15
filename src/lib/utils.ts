@@ -36,6 +36,84 @@ export interface PersonalRecord {
   workoutId: string;
 }
 
+/**
+ * Rolling 7-day-window streak. Window 1 = days 0–6 ago, window 2 = days 7–13,
+ * etc. The streak is alive while each consecutive window has at least one
+ * workout; it breaks the moment a window is empty. `longest` scans the entire
+ * history with the same logic to find the user's best run.
+ */
+export function getWeekStreak(workouts: Workout[]): {
+  current: number;
+  longest: number;
+} {
+  if (workouts.length === 0) return { current: 0, longest: 0 };
+
+  // Build a Set of unique workout dates for O(1) lookup.
+  const workoutDates = new Set(workouts.map((w) => w.date));
+
+  // Find the earliest workout date so we know when to stop scanning history.
+  const earliest = workouts.reduce(
+    (min, w) => (w.date < min ? w.date : min),
+    workouts[0].date
+  );
+  const earliestDate = new Date(earliest + "T00:00:00");
+
+  // Helper: does a 7-day window starting `daysAgoEnd` days back (inclusive)
+  // contain any workout? Window covers days [daysAgoEnd, daysAgoEnd+6] back.
+  function windowHasWorkout(daysAgoEnd: number): boolean {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - daysAgoEnd - i);
+      const key = d.toISOString().split("T")[0];
+      if (workoutDates.has(key)) return true;
+    }
+    return false;
+  }
+
+  // Current streak: count consecutive 7-day windows back from today.
+  let current = 0;
+  let cursor = 0;
+  while (windowHasWorkout(cursor)) {
+    current++;
+    cursor += 7;
+  }
+
+  // Longest streak: scan all overlapping daily-shifted windows across history.
+  // A simpler equivalent: walk forward from earliest workout, week-by-week,
+  // tracking the longest run of non-empty consecutive 7-day windows.
+  let longest = 0;
+  let run = 0;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const totalDaysSpan = Math.floor(
+    (today.getTime() - earliestDate.getTime()) / (1000 * 60 * 60 * 24)
+  );
+  // Iterate windows from oldest to newest in 7-day chunks.
+  for (let offset = totalDaysSpan; offset >= 0; offset -= 7) {
+    if (windowHasWorkout(offset)) {
+      run++;
+      if (run > longest) longest = run;
+    } else {
+      run = 0;
+    }
+  }
+
+  return { current, longest: Math.max(longest, current) };
+}
+
+/** Most-recent PRs (by date set), newest first. */
+export function getRecentPRs(
+  workouts: Workout[],
+  limit: number
+): PersonalRecord[] {
+  return getPersonalRecords(workouts)
+    .slice()
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, limit);
+}
+
 export function getPersonalRecords(workouts: Workout[]): PersonalRecord[] {
   const records = new Map<string, PersonalRecord>();
 
