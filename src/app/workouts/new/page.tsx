@@ -60,7 +60,7 @@ function NewWorkoutForm() {
     setExercises(exercises.filter((_, i) => i !== index));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     const workout: Workout = {
@@ -71,7 +71,7 @@ function NewWorkoutForm() {
       createdAt: new Date().toISOString(),
     };
 
-    dispatch({ type: "ADD_WORKOUT", payload: workout });
+    await dispatch({ type: "ADD_WORKOUT", payload: workout });
     router.push(`/workouts/${workout.id}`);
   }
 

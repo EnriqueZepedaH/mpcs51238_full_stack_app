@@ -1,0 +1,156 @@
+"use server";
+
+import { auth } from "@clerk/nextjs/server";
+import { createServerSupabaseClient } from "./supabase";
+import { Workout, Routine } from "./types";
+import {
+  dbWorkoutToWorkout,
+  dbRoutineToRoutine,
+} from "./db-transforms";
+
+async function getUserId() {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Not authenticated");
+  return userId;
+}
+
+// ── Workouts ──
+
+export async function getWorkouts(): Promise<Workout[]> {
+  const supabase = createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("workouts")
+    .select("*, workout_exercises(*, workout_sets(*))")
+    .order("date", { ascending: false });
+
+  if (error) throw error;
+  return (data || []).map(dbWorkoutToWorkout);
+}
+
+export async function getWorkout(id: string): Promise<Workout | null> {
+  const supabase = createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("workouts")
+    .select("*, workout_exercises(*, workout_sets(*))")
+    .eq("id", id)
+    .single();
+
+  if (error) return null;
+  return dbWorkoutToWorkout(data);
+}
+
+export async function addWorkout(workout: Workout): Promise<void> {
+  const userId = await getUserId();
+  const supabase = createServerSupabaseClient();
+
+  // Insert workout
+  const { error: workoutError } = await supabase.from("workouts").insert({
+    id: workout.id,
+    user_id: userId,
+    title: workout.title,
+    date: workout.date,
+    created_at: workout.createdAt,
+  });
+  if (workoutError) throw workoutError;
+
+  // Insert exercises
+  for (let i = 0; i < workout.exercises.length; i++) {
+    const ex = workout.exercises[i];
+    const { error: exError } = await supabase
+      .from("workout_exercises")
+      .insert({
+        id: ex.id,
+        workout_id: workout.id,
+        name: ex.name,
+        notes: ex.notes,
+        muscle_group: ex.muscleGroup || null,
+        library_exercise_id: ex.libraryExerciseId || null,
+        position: i,
+      });
+    if (exError) throw exError;
+
+    // Insert sets for this exercise
+    if (ex.sets.length > 0) {
+      const { error: setsError } = await supabase
+        .from("workout_sets")
+        .insert(
+          ex.sets.map((s, j) => ({
+            id: s.id,
+            exercise_id: ex.id,
+            reps: s.reps,
+            weight: s.weight,
+            position: j,
+          }))
+        );
+      if (setsError) throw setsError;
+    }
+  }
+}
+
+export async function deleteWorkout(id: string): Promise<void> {
+  const supabase = createServerSupabaseClient();
+  const { error } = await supabase.from("workouts").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// ── Routines ──
+
+export async function getRoutines(): Promise<Routine[]> {
+  const supabase = createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("routines")
+    .select("*, routine_exercises(*)")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data || []).map(dbRoutineToRoutine);
+}
+
+export async function getRoutine(id: string): Promise<Routine | null> {
+  const supabase = createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("routines")
+    .select("*, routine_exercises(*)")
+    .eq("id", id)
+    .single();
+
+  if (error) return null;
+  return dbRoutineToRoutine(data);
+}
+
+export async function addRoutine(routine: Routine): Promise<void> {
+  const userId = await getUserId();
+  const supabase = createServerSupabaseClient();
+
+  const { error: routineError } = await supabase.from("routines").insert({
+    id: routine.id,
+    user_id: userId,
+    name: routine.name,
+    created_at: routine.createdAt,
+  });
+  if (routineError) throw routineError;
+
+  if (routine.exercises.length > 0) {
+    const { error: exError } = await supabase
+      .from("routine_exercises")
+      .insert(
+        routine.exercises.map((ex, i) => ({
+          id: ex.id,
+          routine_id: routine.id,
+          name: ex.name,
+          muscle_group: ex.muscleGroup || null,
+          library_exercise_id: ex.libraryExerciseId || null,
+          target_sets: ex.targetSets,
+          target_reps: ex.targetReps,
+          position: i,
+        }))
+      );
+    if (exError) throw exError;
+  }
+}
+
+export async function deleteRoutine(id: string): Promise<void> {
+  const supabase = createServerSupabaseClient();
+  const { error } = await supabase.from("routines").delete().eq("id", id);
+  if (error) throw error;
+}

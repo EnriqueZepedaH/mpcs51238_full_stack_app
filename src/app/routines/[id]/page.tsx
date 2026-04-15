@@ -16,6 +16,14 @@ export default function RoutineDetailPage({
   const { state, dispatch } = useWorkouts();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  if (state.loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-gray-900" />
+      </div>
+    );
+  }
+
   const routine = state.routines.find((r) => r.id === id);
 
   if (!routine) {
@@ -32,8 +40,8 @@ export default function RoutineDetailPage({
     );
   }
 
-  function handleDelete() {
-    dispatch({ type: "DELETE_ROUTINE", payload: { id: routine!.id } });
+  async function handleDelete() {
+    await dispatch({ type: "DELETE_ROUTINE", payload: { id: routine!.id } });
     router.push("/routines");
   }
 

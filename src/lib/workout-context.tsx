@@ -1,10 +1,19 @@
 "use client";
 
-import { createContext, useContext, useReducer, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useReducer,
+  useEffect,
+  useCallback,
+  ReactNode,
+} from "react";
 import { Workout, Routine } from "./types";
-import { seedWorkouts, seedRoutines } from "./seed-data";
+import * as db from "./actions";
 
 type WorkoutAction =
+  | { type: "SET_DATA"; payload: { workouts: Workout[]; routines: Routine[] } }
+  | { type: "SET_LOADING"; payload: boolean }
   | { type: "ADD_WORKOUT"; payload: Workout }
   | { type: "DELETE_WORKOUT"; payload: { id: string } }
   | { type: "UPDATE_WORKOUT"; payload: Workout }
@@ -15,6 +24,7 @@ type WorkoutAction =
 interface WorkoutState {
   workouts: Workout[];
   routines: Routine[];
+  loading: boolean;
 }
 
 function workoutReducer(
@@ -22,6 +32,14 @@ function workoutReducer(
   action: WorkoutAction
 ): WorkoutState {
   switch (action.type) {
+    case "SET_DATA":
+      return {
+        ...state,
+        workouts: action.payload.workouts,
+        routines: action.payload.routines,
+      };
+    case "SET_LOADING":
+      return { ...state, loading: action.payload };
     case "ADD_WORKOUT":
       return { ...state, workouts: [action.payload, ...state.workouts] };
     case "DELETE_WORKOUT":
@@ -55,16 +73,59 @@ function workoutReducer(
   }
 }
 
+type DispatchAction = Exclude<WorkoutAction, { type: "SET_DATA" } | { type: "SET_LOADING" }>;
+
 const WorkoutContext = createContext<{
   state: WorkoutState;
-  dispatch: React.Dispatch<WorkoutAction>;
+  dispatch: (action: DispatchAction) => Promise<void>;
 } | null>(null);
 
 export function WorkoutProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(workoutReducer, {
-    workouts: seedWorkouts,
-    routines: seedRoutines,
+  const [state, localDispatch] = useReducer(workoutReducer, {
+    workouts: [],
+    routines: [],
+    loading: true,
   });
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const [workouts, routines] = await Promise.all([
+          db.getWorkouts(),
+          db.getRoutines(),
+        ]);
+        localDispatch({ type: "SET_DATA", payload: { workouts, routines } });
+      } catch (err) {
+        console.error("Failed to load data:", err);
+      } finally {
+        localDispatch({ type: "SET_LOADING", payload: false });
+      }
+    }
+    load();
+  }, []);
+
+  const dispatch = useCallback(async (action: DispatchAction) => {
+    switch (action.type) {
+      case "ADD_WORKOUT":
+        await db.addWorkout(action.payload);
+        localDispatch(action);
+        break;
+      case "DELETE_WORKOUT":
+        await db.deleteWorkout(action.payload.id);
+        localDispatch(action);
+        break;
+      case "ADD_ROUTINE":
+        await db.addRoutine(action.payload);
+        localDispatch(action);
+        break;
+      case "DELETE_ROUTINE":
+        await db.deleteRoutine(action.payload.id);
+        localDispatch(action);
+        break;
+      default:
+        localDispatch(action);
+    }
+  }, []);
 
   return (
     <WorkoutContext.Provider value={{ state, dispatch }}>

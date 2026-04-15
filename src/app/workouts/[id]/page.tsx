@@ -18,6 +18,14 @@ export default function WorkoutDetailPage({
   const { state, dispatch } = useWorkouts();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  if (state.loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-gray-900" />
+      </div>
+    );
+  }
+
   const workout = state.workouts.find((w) => w.id === id);
 
   if (!workout) {
@@ -43,8 +51,8 @@ export default function WorkoutDetailPage({
     0
   );
 
-  function handleDelete() {
-    dispatch({ type: "DELETE_WORKOUT", payload: { id: workout!.id } });
+  async function handleDelete() {
+    await dispatch({ type: "DELETE_WORKOUT", payload: { id: workout!.id } });
     router.push("/workouts");
   }
 

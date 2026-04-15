@@ -44,7 +44,7 @@ export default function NewRoutinePage() {
     setExercises(exercises.filter((_, i) => i !== index));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     const routine: Routine = {
@@ -54,7 +54,7 @@ export default function NewRoutinePage() {
       createdAt: new Date().toISOString(),
     };
 
-    dispatch({ type: "ADD_ROUTINE", payload: routine });
+    await dispatch({ type: "ADD_ROUTINE", payload: routine });
     router.push(`/routines/${routine.id}`);
   }
 
