@@ -1,35 +1,35 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import PageHeader from "@/components/page-header";
-import { SavedExercise } from "@/lib/types";
-import { getSavedExercises, unsaveExercise } from "@/lib/actions";
+import { useWorkouts } from "@/lib/workout-context";
 
 export default function SavedPage() {
-  const [exercises, setExercises] = useState<SavedExercise[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { state, dispatch } = useWorkouts();
   const [removingIds, setRemovingIds] = useState<Set<number>>(new Set());
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    getSavedExercises()
-      .then((data) => setExercises(data))
-      .catch((err) => {
-        console.error(err);
-        setError("Failed to load saved exercises.");
-      })
-      .finally(() => setLoading(false));
-  }, []);
+  if (state.loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-gray-900" />
+      </div>
+    );
+  }
+
+  const exercises = state.savedExercises;
 
   async function handleUnsave(exerciseId: number) {
     if (removingIds.has(exerciseId)) return;
     setRemovingIds((prev) => new Set(prev).add(exerciseId));
 
     try {
-      await unsaveExercise(exerciseId);
-      setExercises((prev) => prev.filter((e) => e.apiExerciseId !== exerciseId));
+      await dispatch({
+        type: "REMOVE_SAVED_EXERCISE",
+        payload: { apiExerciseId: exerciseId },
+      });
     } catch (err) {
       console.error(err);
       setError("Failed to unsave exercise.");
@@ -40,14 +40,6 @@ export default function SavedPage() {
         return next;
       });
     }
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-gray-900" />
-      </div>
-    );
   }
 
   return (

@@ -2,7 +2,14 @@
 
 import { auth } from "@clerk/nextjs/server";
 import { createServerSupabaseClient } from "./supabase";
-import { Workout, Routine, SavedExercise, WgerMuscle, WgerEquipment } from "./types";
+import {
+  Workout,
+  Routine,
+  SavedExercise,
+  CommunityFavorite,
+  WgerMuscle,
+  WgerEquipment,
+} from "./types";
 import {
   dbWorkoutToWorkout,
   dbRoutineToRoutine,
@@ -209,4 +216,38 @@ export async function unsaveExercise(apiExerciseId: number): Promise<void> {
     .eq("api_exercise_id", apiExerciseId);
 
   if (error) throw error;
+}
+
+/**
+ * Returns the most-saved wger exercises across ALL users (not just the
+ * current one). Calls a SECURITY DEFINER Postgres function that bypasses
+ * RLS so we can aggregate counts without exposing individual saves.
+ *
+ * Available to anonymous callers too — community favorites are public-safe
+ * (just aggregate counts, no per-user data).
+ */
+export async function getCommunityFavorites(): Promise<CommunityFavorite[]> {
+  const supabase = createServerSupabaseClient();
+  const { data, error } = await supabase.rpc("get_community_favorites");
+
+  if (error) {
+    console.error("Failed to load community favorites:", error);
+    return [];
+  }
+
+  return (data || []).map(
+    (r: {
+      api_exercise_id: number;
+      name: string;
+      muscle_group: string | null;
+      image_url: string | null;
+      save_count: number | string;
+    }) => ({
+      apiExerciseId: r.api_exercise_id,
+      name: r.name,
+      muscleGroup: r.muscle_group,
+      imageUrl: r.image_url,
+      saveCount: Number(r.save_count),
+    })
+  );
 }
