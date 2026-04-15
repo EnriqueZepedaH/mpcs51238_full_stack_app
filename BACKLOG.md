@@ -37,3 +37,37 @@ The current rolling-7-day streak is good enough for the MVP and is the simplest 
 - Do streaks reset on goal change, or do we recompute history under the new rules?
 - Should "max_gap" allow rest days within the gap, or strictly count calendar days?
 - For `split_cadence`, do we let users name custom buckets (e.g., "core", "cardio")?
+
+---
+
+## Automated in-session testing (Playwright + Playwright MCP)
+
+**Status:** Idea / not started
+**Why:** After every feature change I (or Claude) end up manually clicking through the app to verify it works — log in, open the page, fill the form, save, navigate to the detail page, etc. It's slow, error-prone, and we end up shipping changes without checking the obvious paths because the friction is too high. The existing Playwright suite (`tests/guest-experience.spec.ts`) only covers the unauthenticated guest flow because authenticated tests need Clerk testing tokens we never set up. We should be doing both: a real automated suite for regression safety, AND giving Claude direct browser control during sessions so verification is a tool call away instead of a human task.
+
+### Two pieces
+
+**1. Authenticated Playwright suite**
+- Install `@clerk/testing` and create a Clerk testing API key in the dashboard
+- Add a global setup that signs in a dedicated test user and persists the auth state to a file
+- Reuse the auth state via `storageState` so each test starts already signed in
+- Cover the high-value flows: log a workout, create a routine, start a workout from a routine (with auto-fill weights), save a wger exercise from `/explore`, see it in the workout picker, see it on `/saved`, unsave it
+- Run alongside the existing guest tests in CI
+
+**2. Playwright MCP integration for in-session use**
+- Add the Microsoft Playwright MCP server: `claude mcp add --transport stdio playwright npx @playwright/mcp@latest` (or whatever the current install command is)
+- Once authenticated, Claude can call `browser_navigate`, `browser_click`, `browser_type`, `browser_snapshot`, etc. directly from a chat session
+- Workflow becomes: make a code change → Claude opens the app, exercises the feature, takes an accessibility snapshot, confirms the assertion → moves on
+- Way faster than asking the human to check, especially for visual / interactive changes
+- Treat it as the dev-loop equivalent of a unit test, not a replacement for the persistent suite
+
+### Why deferred
+
+The guest-side Playwright suite already catches the most common regressions (auth redirects, public pages, sign-in/sign-up rendering, the wger search proxy). Authenticated tests require Clerk dashboard configuration the developer hasn't done yet, and Playwright MCP needs a separate install + permissions grant. Both are low-risk, high-payoff additions but we've been able to ship without them.
+
+### Open questions when picking this up
+
+- Test user lifecycle: do we delete and recreate the user before each run, or rely on idempotent fixtures?
+- Should authenticated tests hit a separate Supabase project (test DB) so they can freely insert/delete without polluting prod? Or run against the same DB with a unique test user_id and clean up after?
+- For Playwright MCP, what permission scope makes sense? Allow it to run freely on `localhost:3000` only, or also against the deployed Vercel URL?
+- Do we need to scope the MCP server's data access (cookies, localStorage) to avoid leaking the dev user's session beyond the test scenario?
