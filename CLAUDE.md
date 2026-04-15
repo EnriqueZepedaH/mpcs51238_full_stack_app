@@ -2,6 +2,24 @@
 
 A full-stack workout tracking app built with Next.js 16, Tailwind CSS v4, Clerk, and Supabase. Log workouts with exercises, sets, reps, and weight. Create reusable routines. Browse a static exercise library or explore 800+ exercises from the wger API and save favorites. View personal records and weekly progress. All data is per-user and persisted in Supabase.
 
+## Security: Handling Secrets
+
+**ALWAYS proactively warn the user the moment a secret is exposed in an insecure channel.** Do not wait to be asked.
+
+A "secret" includes: API keys (Clerk `sk_*`, Supabase `service_role`, OAuth client secrets, JWT secrets), database passwords, private keys, session tokens, and webhook signing secrets. Anything prefixed with `NEXT_PUBLIC_*` is **not** secret — those are intentionally shipped to the browser.
+
+Insecure channels include: chat messages, screenshots, Slack, email, terminal output that gets logged, git commits, comments in code, anywhere prefixed `NEXT_PUBLIC_*`, and `console.log` statements.
+
+When a secret is pasted, shared, or about to be committed in any of these places, immediately:
+1. Stop and call it out clearly (e.g., "⚠️ That secret key just landed in chat — that's a secondary exposure beyond your local env.")
+2. Explain the risk in one sentence
+3. Recommend rotating the key (Clerk Dashboard → API Keys → Roll keys; Supabase Dashboard → Settings → API → Reset)
+4. Then continue with the task
+
+Do this even if the user originally pasted the secret themselves — if it now appears in chat, screen-share, or anywhere else, it's a fresh exposure worth flagging. Do not echo secret values back unnecessarily; reference them by name (e.g., `CLERK_SECRET_KEY`) instead.
+
+Safe places for secrets: `.env.local` (gitignored), Vercel/host environment variables, secret managers (1Password, Doppler, AWS Secrets Manager).
+
 ## Tech Stack
 
 - Next.js 16 (App Router) + TypeScript
