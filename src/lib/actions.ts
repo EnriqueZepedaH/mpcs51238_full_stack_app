@@ -2,10 +2,11 @@
 
 import { auth } from "@clerk/nextjs/server";
 import { createServerSupabaseClient } from "./supabase";
-import { Workout, Routine } from "./types";
+import { Workout, Routine, SavedExercise, WgerMuscle, WgerEquipment } from "./types";
 import {
   dbWorkoutToWorkout,
   dbRoutineToRoutine,
+  dbSavedExerciseToSavedExercise,
 } from "./db-transforms";
 
 async function getUserId() {
@@ -152,5 +153,60 @@ export async function addRoutine(routine: Routine): Promise<void> {
 export async function deleteRoutine(id: string): Promise<void> {
   const supabase = createServerSupabaseClient();
   const { error } = await supabase.from("routines").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// ── Saved Exercises (from external wger API) ──
+
+export async function getSavedExercises(): Promise<SavedExercise[]> {
+  const supabase = createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("saved_exercises")
+    .select("*")
+    .order("saved_at", { ascending: false });
+
+  if (error) throw error;
+  return (data || []).map(dbSavedExerciseToSavedExercise);
+}
+
+interface SaveExerciseInput {
+  apiExerciseId: number;
+  name: string;
+  description: string;
+  muscleGroup: string | null;
+  muscles: WgerMuscle[];
+  equipment: WgerEquipment[];
+  imageUrl: string | null;
+}
+
+export async function saveExercise(input: SaveExerciseInput): Promise<void> {
+  const userId = await getUserId();
+  const supabase = createServerSupabaseClient();
+
+  const { error } = await supabase.from("saved_exercises").insert({
+    user_id: userId,
+    api_exercise_id: input.apiExerciseId,
+    name: input.name,
+    description: input.description,
+    muscle_group: input.muscleGroup,
+    muscles: input.muscles,
+    equipment: input.equipment,
+    image_url: input.imageUrl,
+  });
+
+  // Ignore unique constraint violations (exercise already saved)
+  if (error && error.code !== "23505") throw error;
+}
+
+export async function unsaveExercise(apiExerciseId: number): Promise<void> {
+  const userId = await getUserId();
+  const supabase = createServerSupabaseClient();
+
+  const { error } = await supabase
+    .from("saved_exercises")
+    .delete()
+    .eq("user_id", userId)
+    .eq("api_exercise_id", apiExerciseId);
+
   if (error) throw error;
 }

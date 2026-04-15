@@ -1,4 +1,4 @@
-import { Workout, Exercise, WorkoutSet, Routine, RoutineExercise } from "./types";
+import { Workout, Exercise, WorkoutSet, Routine, RoutineExercise, SavedExercise } from "./types";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -46,5 +46,19 @@ export function dbRoutineToRoutine(row: any): Routine {
     name: row.name,
     exercises,
     createdAt: row.created_at,
+  };
+}
+
+export function dbSavedExerciseToSavedExercise(row: any): SavedExercise {
+  return {
+    id: row.id,
+    apiExerciseId: row.api_exercise_id,
+    name: row.name,
+    description: row.description || "",
+    muscleGroup: row.muscle_group,
+    muscles: row.muscles || [],
+    equipment: row.equipment || [],
+    imageUrl: row.image_url,
+    savedAt: row.saved_at,
   };
 }

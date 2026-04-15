@@ -58,3 +58,57 @@ export interface Routine {
   exercises: RoutineExercise[];
   createdAt: string;
 }
+
+// External API (wger) types
+
+export interface WgerSearchSuggestion {
+  value: string;
+  data: {
+    id: number;
+    base_id: number;
+    name: string;
+    category: string;
+    image: string | null;
+    image_thumbnail: string | null;
+  };
+}
+
+export interface WgerMuscle {
+  id: number;
+  name: string;
+  name_en: string;
+  is_front: boolean;
+}
+
+export interface WgerEquipment {
+  id: number;
+  name: string;
+}
+
+export interface WgerImage {
+  image: string;
+  is_main: boolean;
+}
+
+export interface WgerExerciseDetail {
+  id: number;
+  name: string;
+  description: string;
+  category: string;
+  muscles: WgerMuscle[];
+  muscles_secondary: WgerMuscle[];
+  equipment: WgerEquipment[];
+  images: WgerImage[];
+}
+
+export interface SavedExercise {
+  id: string;
+  apiExerciseId: number;
+  name: string;
+  description: string;
+  muscleGroup: string | null;
+  muscles: WgerMuscle[];
+  equipment: WgerEquipment[];
+  imageUrl: string | null;
+  savedAt: string;
+}
