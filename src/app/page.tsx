@@ -1,21 +1,28 @@
 "use client";
 
 import Link from "next/link";
+import { useAuth } from "@clerk/nextjs";
 import { useWorkouts } from "@/lib/workout-context";
 import { calcVolume, formatDate, getLast7DaysWorkouts } from "@/lib/utils";
 import StatsCard from "@/components/stats-card";
 import PageHeader from "@/components/page-header";
 import MuscleHeatmap from "@/components/muscle-heatmap";
+import LandingPage from "@/components/landing-page";
 
-export default function DashboardPage() {
+export default function HomePage() {
+  const { isLoaded, isSignedIn } = useAuth();
   const { state } = useWorkouts();
 
-  if (state.loading) {
+  if (!isLoaded || (isSignedIn && state.loading)) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-gray-900" />
       </div>
     );
+  }
+
+  if (!isSignedIn) {
+    return <LandingPage />;
   }
 
   const { workouts } = state;
