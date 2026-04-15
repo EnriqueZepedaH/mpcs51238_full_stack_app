@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, Suspense } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useWorkouts } from "@/lib/workout-context";
-import { Exercise, Workout } from "@/lib/types";
+import { Exercise, Routine, Workout } from "@/lib/types";
+import { getRecentPRWeight, roundToNearestFive } from "@/lib/utils";
 import ExerciseForm from "@/components/exercise-form";
 import PageHeader from "@/components/page-header";
 
@@ -16,34 +18,71 @@ function emptyExercise(): Exercise {
   };
 }
 
+/**
+ * Builds workout exercises from a routine template. If the user has logged
+ * the same exercise within the last 30 days, suggest weights based on their
+ * recent PR: 80% on the first set (top working set), 75% on subsequent sets.
+ * Falls back to 0 lbs when there's no recent history to anchor on.
+ */
+function routineToExercises(routine: Routine, workouts: Workout[]): Exercise[] {
+  return routine.exercises.map((re) => {
+    const recentPR = getRecentPRWeight(workouts, re.name, 30);
+    return {
+      id: crypto.randomUUID(),
+      name: re.name,
+      notes: "",
+      muscleGroup: re.muscleGroup,
+      libraryExerciseId: re.libraryExerciseId,
+      sets: Array.from({ length: re.targetSets }, (_, i) => ({
+        id: crypto.randomUUID(),
+        reps: re.targetReps,
+        weight: recentPR
+          ? roundToNearestFive(recentPR * (i === 0 ? 0.8 : 0.75))
+          : 0,
+      })),
+    };
+  });
+}
+
 function NewWorkoutForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const routineId = searchParams.get("routine");
+  const routineIdParam = searchParams.get("routine");
   const { state, dispatch } = useWorkouts();
 
-  const routine = routineId
-    ? state.routines.find((r) => r.id === routineId)
+  const initialRoutine = routineIdParam
+    ? state.routines.find((r) => r.id === routineIdParam)
     : null;
 
-  const [title, setTitle] = useState(routine?.name || "");
+  const [selectedRoutineId, setSelectedRoutineId] = useState(
+    initialRoutine?.id ?? ""
+  );
+  const [title, setTitle] = useState(initialRoutine?.name ?? "");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [exercises, setExercises] = useState<Exercise[]>(
-    routine
-      ? routine.exercises.map((re) => ({
-          id: crypto.randomUUID(),
-          name: re.name,
-          notes: "",
-          muscleGroup: re.muscleGroup,
-          libraryExerciseId: re.libraryExerciseId,
-          sets: Array.from({ length: re.targetSets }, () => ({
-            id: crypto.randomUUID(),
-            reps: re.targetReps,
-            weight: 0,
-          })),
-        }))
+    initialRoutine
+      ? routineToExercises(initialRoutine, state.workouts)
       : [emptyExercise()]
   );
+
+  const selectedRoutine = state.routines.find(
+    (r) => r.id === selectedRoutineId
+  );
+
+  function handleRoutineChange(newId: string) {
+    setSelectedRoutineId(newId);
+    if (!newId) {
+      // Switched back to "Start from scratch"
+      setTitle("");
+      setExercises([emptyExercise()]);
+      return;
+    }
+    const routine = state.routines.find((r) => r.id === newId);
+    if (routine) {
+      setTitle(routine.name);
+      setExercises(routineToExercises(routine, state.workouts));
+    }
+  }
 
   function addExercise() {
     setExercises([...exercises, emptyExercise()]);
@@ -80,19 +119,56 @@ function NewWorkoutForm() {
       <PageHeader
         title="Log Workout"
         subtitle={
-          routine
-            ? `From routine: ${routine.name}`
+          selectedRoutine
+            ? `From routine: ${selectedRoutine.name}`
             : "Record your exercises and sets"
         }
       />
 
-      {routine && (
-        <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
-          Pre-filled from <span className="font-medium text-gray-900">{routine.name}</span> routine. Fill in your weights and adjust as needed.
-        </div>
-      )}
-
       <form onSubmit={handleSubmit} className="space-y-6">
+        <div>
+          <label
+            htmlFor="routine-select"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Start from routine{" "}
+            <span className="font-normal text-gray-400">(optional)</span>
+          </label>
+          {state.routines.length === 0 ? (
+            <p className="mt-1 text-sm text-gray-500">
+              No routines yet.{" "}
+              <Link
+                href="/routines/new"
+                className="font-medium text-gray-900 hover:underline"
+              >
+                Create one
+              </Link>{" "}
+              to reuse it later.
+            </p>
+          ) : (
+            <select
+              id="routine-select"
+              value={selectedRoutineId}
+              onChange={(e) => handleRoutineChange(e.target.value)}
+              className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-gray-900"
+            >
+              <option value="">— Start from scratch —</option>
+              {state.routines.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name} ({r.exercises.length} exercise
+                  {r.exercises.length !== 1 ? "s" : ""})
+                </option>
+              ))}
+            </select>
+          )}
+          {selectedRoutine && (
+            <p className="mt-1 text-xs text-gray-500">
+              Sets and reps from the routine. Weights estimated at 80% / 75%
+              of your last-30-day PR per exercise — adjust as needed.
+            </p>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="block text-sm font-medium text-gray-700">

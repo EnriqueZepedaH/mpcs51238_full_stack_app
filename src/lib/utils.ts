@@ -126,6 +126,43 @@ export function getPRWeight(
   return max;
 }
 
+/**
+ * Heaviest weight lifted for an exercise within the last `daysBack` days.
+ * Matches exercise names case-insensitively so a routine entry "Bench Press"
+ * picks up logged sets named "bench press" or "Bench press" too.
+ */
+export function getRecentPRWeight(
+  workouts: Workout[],
+  exerciseName: string,
+  daysBack: number = 30
+): number | undefined {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - daysBack);
+  cutoff.setHours(0, 0, 0, 0);
+  const target = exerciseName.toLowerCase();
+
+  let max: number | undefined;
+  for (const workout of workouts) {
+    const d = new Date(workout.date + "T00:00:00");
+    if (d < cutoff) continue;
+
+    for (const exercise of workout.exercises) {
+      if (exercise.name.toLowerCase() !== target) continue;
+      for (const set of exercise.sets) {
+        if (max === undefined || set.weight > max) {
+          max = set.weight;
+        }
+      }
+    }
+  }
+  return max;
+}
+
+/** Rounds a weight to the nearest 5 (since plates come in 2.5 lb increments). */
+export function roundToNearestFive(weight: number): number {
+  return Math.round(weight / 5) * 5;
+}
+
 export function getMuscleGroupVolumes(
   exercises: Exercise[]
 ): Record<string, number> {
