@@ -11,6 +11,7 @@ const PAGE_SIZE = 10;
 
 export default function WorkoutsPage() {
   const { state } = useWorkouts();
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   if (state.loading) {
     return (
@@ -23,7 +24,6 @@ export default function WorkoutsPage() {
   const workouts = [...state.workouts].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const visibleWorkouts = workouts.slice(0, visibleCount);
   const hasMore = visibleCount < workouts.length;
 

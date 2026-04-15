@@ -1,48 +1,98 @@
 # Workout Tracker
 
-A personal workout tracking app built with Next.js 16 and Tailwind CSS v4. Log workouts with exercises, sets, reps, and weight. Create reusable routines. Browse an exercise library organized by muscle group. View personal records and weekly progress.
+A full-stack workout tracking app built with Next.js 16, Tailwind CSS v4, Clerk, and Supabase. Log workouts with exercises, sets, reps, and weight. Create reusable routines. Browse a static exercise library or explore 800+ exercises from the wger API and save favorites. View personal records and weekly progress. All data is per-user and persisted in Supabase.
 
 ## Tech Stack
 
-- Next.js 16 (App Router)
-- TypeScript
+- Next.js 16 (App Router) + TypeScript
 - Tailwind CSS v4
-- React Context + useReducer for state management
-- Client-side state only (data resets on refresh)
+- Clerk for authentication (sign up, sign in, sign out)
+- Supabase (Postgres) for persistence with Row Level Security
+- React Context + useReducer for client state, Server Actions for mutations
+- wger public API for external exercise data
 
 ## Pages
 
 | Route | Page | Description |
 |---|---|---|
-| `/` | Dashboard | Quick stats, recent workouts, CTA to log |
-| `/workouts` | Workout List | All workouts sorted by date |
+| `/sign-in` | Sign In | Clerk-hosted sign-in flow |
+| `/sign-up` | Sign Up | Clerk-hosted sign-up flow |
+| `/` | Dashboard | Quick stats, recent workouts, muscle heatmap |
+| `/workouts` | Workout List | All workouts sorted by date with calendar view |
 | `/workouts/new` | Log Workout | Form to add a new workout (supports ?routine= param) |
 | `/workouts/[id]` | Workout Detail | Full breakdown of a single workout |
-| `/exercises` | Exercise Library | Browse ~45 exercises filtered by muscle group |
+| `/exercises` | Exercise Library | Browse ~45 static exercises filtered by muscle group |
 | `/routines` | Routines | List of reusable workout templates |
 | `/routines/new` | Create Routine | Form to define a routine with target sets/reps |
 | `/routines/[id]` | Routine Detail | View routine, start workout from it |
 | `/records` | Personal Records | Best lifts per exercise, weekly volume |
+| `/explore` | Explore | Search and save exercises from the wger API |
+| `/saved` | Saved | View saved exercises from the wger API |
+
+## API Routes
+
+| Route | Purpose |
+|---|---|
+| `/api/exercises/search?q=...` | Server-side proxy to wger search endpoint |
+| `/api/exercises/[id]` | Server-side proxy for full wger exercise detail |
+
+External API calls are made server-side (never from the browser) via Next.js route handlers.
 
 ## Data Model
 
 ```typescript
-MuscleGroup = "Chest" | "Back" | "Shoulders" | "Biceps" | "Triceps" | "Legs" | "Glutes" | "Core" | "Full Body"
+MuscleGroup = "Chest" | "Traps" | "Lats" | "Lower Back" | "Shoulders" | "Biceps"
+            | "Triceps" | "Forearms" | "Quads" | "Hamstrings" | "Calves"
+            | "Glutes" | "Core" | "Full Body"
 LibraryExercise { id, name, muscleGroup }
 WorkoutSet { id, reps, weight }
 Exercise { id, name, notes, sets: WorkoutSet[], muscleGroup?, libraryExerciseId? }
 Workout { id, date, title, exercises: Exercise[], createdAt }
 RoutineExercise { id, name, muscleGroup?, libraryExerciseId?, targetSets, targetReps }
 Routine { id, name, exercises: RoutineExercise[], createdAt }
+SavedExercise { id, apiExerciseId, name, description, muscleGroup, muscles, equipment, imageUrl, savedAt }
 ```
+
+## Database Schema (Supabase)
+
+| Table | Purpose | Notes |
+|---|---|---|
+| `workouts` | One row per workout | RLS scoped to Clerk user_id |
+| `workout_exercises` | Exercises in a workout | CASCADE on workout delete |
+| `workout_sets` | Sets in an exercise | CASCADE on exercise delete |
+| `routines` | One row per routine | RLS scoped to Clerk user_id |
+| `routine_exercises` | Exercises in a routine | CASCADE on routine delete |
+| `saved_exercises` | wger exercises saved by user | UNIQUE(user_id, api_exercise_id) |
+
+All RLS policies use `auth.jwt() ->> 'sub'` to match the Clerk user ID.
 
 ## State Management
 
-React Context wraps the app via `WorkoutProvider` in the root layout.
-- Workout actions: ADD_WORKOUT, DELETE_WORKOUT, UPDATE_WORKOUT
-- Routine actions: ADD_ROUTINE, DELETE_ROUTINE, UPDATE_ROUTINE
-- Exercise library is a static constant (not in context)
-- Seed data provides sample workouts and 3 routines (Push/Pull/Legs)
+- Authentication: `<ClerkProvider>` wraps the root layout; middleware (`src/middleware.ts`) protects all routes except `/sign-in` and `/sign-up`
+- App data: `<WorkoutProvider>` loads workouts and routines from Supabase on mount via server actions
+- Mutations: `dispatch` in the context calls server actions then updates local state
+- Saved exercises: managed locally in `/explore` and `/saved` pages via direct server action calls
+- Exercise library is a static constant in `src/lib/exercise-library.ts`
+
+## Server Actions
+
+In `src/lib/actions.ts`:
+- `getWorkouts`, `getWorkout`, `addWorkout`, `deleteWorkout`
+- `getRoutines`, `getRoutine`, `addRoutine`, `deleteRoutine`
+- `getSavedExercises`, `saveExercise`, `unsaveExercise`
+
+The Supabase client (`src/lib/supabase.ts`) uses Clerk's `accessToken` callback so RLS policies see the correct `sub` claim.
+
+## Environment Variables
+
+```bash
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+CLERK_SECRET_KEY
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+```
 
 ## Style
 
@@ -54,5 +104,5 @@ Clean & minimal (Notion/Linear-inspired). Inter font, gray-50 background, white 
 npm run dev      # Start dev server on localhost:3000
 npm run build    # Production build
 npm run lint     # ESLint
-npx playwright test  # Run Playwright tests
+npx playwright test  # Run Playwright tests (currently broken — auth + seed data changes)
 ```

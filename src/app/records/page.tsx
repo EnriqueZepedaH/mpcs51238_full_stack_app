@@ -14,6 +14,10 @@ import MuscleGroupBadge from "@/components/muscle-group-badge";
 
 export default function RecordsPage() {
   const { state } = useWorkouts();
+  const [muscleFilter, setMuscleFilter] = useState<string | undefined>();
+  const [nameFilter, setNameFilter] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   if (state.loading) {
     return (
@@ -26,11 +30,6 @@ export default function RecordsPage() {
   const allRecords = getPersonalRecords(state.workouts);
   const weeklySummaries = getWeeklySummaries(state.workouts);
   const maxVolume = Math.max(...weeklySummaries.map((w) => w.totalVolume), 1);
-
-  const [muscleFilter, setMuscleFilter] = useState<string | undefined>();
-  const [nameFilter, setNameFilter] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
 
   const records = allRecords.filter((r) => {
     if (muscleFilter) {
