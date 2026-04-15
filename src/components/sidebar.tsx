@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { UserButton } from "@clerk/nextjs";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: HomeIcon },
@@ -28,7 +29,9 @@ export default function Sidebar() {
             Workout Tracker
           </span>
         </div>
-        <button
+        <div className="flex items-center gap-2">
+          <UserButton />
+          <button
           onClick={() => setMobileOpen(!mobileOpen)}
           className="rounded-md p-2 text-gray-600 hover:bg-gray-100"
         >
@@ -41,7 +44,8 @@ export default function Sidebar() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
             </svg>
           )}
-        </button>
+          </button>
+        </div>
       </div>
 
       {/* Mobile dropdown nav */}
@@ -111,7 +115,11 @@ export default function Sidebar() {
           })}
         </nav>
 
-        <div className="border-t border-gray-200 p-3">
+        <div className="border-t border-gray-200 p-3 space-y-3">
+          <div className="flex items-center gap-3 px-3">
+            <UserButton />
+            <span className="text-sm text-gray-600">Account</span>
+          </div>
           <Link
             href="/workouts/new"
             className="flex w-full items-center justify-center gap-2 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800"
