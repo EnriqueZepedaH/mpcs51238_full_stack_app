@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Assignment 3 - Reflection Questions</title>
+<style>
+  /* Lightweight styles tuned for "select all → copy → paste into Google Docs".
+     Keep semantic HTML clean; Google Docs preserves headings, bold, lists,
+     tables, and inline code when the source uses standard tags. */
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 11pt;
+    line-height: 1.5;
+    color: #222;
+    max-width: 780px;
+    margin: 40px auto;
+    padding: 0 24px;
+  }
+  h1 {
+    font-size: 22pt;
+    font-weight: bold;
+    margin: 0 0 24px 0;
+  }
+  h2 {
+    font-size: 14pt;
+    font-weight: bold;
+    margin: 32px 0 12px 0;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #ccc;
+  }
+  p {
+    margin: 0 0 12px 0;
+  }
+  code {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 10pt;
+    background: #f4f4f4;
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 12px 0;
+    font-size: 10pt;
+  }
+  th, td {
+    border: 1px solid #999;
+    padding: 6px 10px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: #f0f0f0;
+    font-weight: bold;
+  }
+  strong { font-weight: bold; }
+</style>
+</head>
+<body>
+
+<h1>Assignment 3 - Reflection Questions</h1>
+
+<h2>1. Trace a request: a user searches, saves, and views it on their profile. What systems are involved?</h2>
+
+<p>I'll trace the "search, save, view" flow on the Explore page (<code>/explore</code>).</p>
+
+<p>The user types a query like "bench press" into the search input. The component debounces for 300ms then fires a <code>fetch</code> to <code>/api/exercises/search?q=bench+press</code>, which is a Next.js API route in <code>src/app/api/exercises/search/route.ts</code>. That route proxies to the wger public API (<code>https://wger.de/api/v2/exerciseinfo/?name__search=...&amp;language__code=en</code>), normalizes the response (pulls out the English translation since the original site is in german, finds the main image, flattens the nested structure), and returns a clean list of suggestions. The fetch uses <code>next: { revalidate: 300 }</code> so the server caches results for 5 minutes.</p>
+
+<p>Results render as cards. The user clicks Save, which calls the <code>saveExercise()</code> server action in <code>src/lib/actions.ts</code>. That function calls <code>auth()</code> from Clerk to get the current userId, then creates a Supabase client via <code>createServerSupabaseClient()</code> (which passes Clerk's access token through the <code>accessToken</code> callback). It inserts a row into the <code>saved_exercises</code> table with the user's ID, exercise name, muscle info, and image URL. Supabase RLS policies enforce that you can only insert rows where <code>user_id</code> matches <code>auth.jwt() -&gt;&gt; 'sub'</code> (the Clerk user ID in the JWT).</p>
+
+<p>Later the user goes to <code>/saved</code>. The page reads from <code>WorkoutContext</code>, which already loaded the user's saved exercises on mount via the <code>getSavedExercises()</code> server action — that's a <code>SELECT</code> on <code>saved_exercises</code> where RLS automatically scopes the query to the current user. So even on <code>/saved</code>, the picker on <code>/workouts/new</code>, and the heart/save state on <code>/explore</code>, all three components see the same in-memory list and stay in sync without refetching.</p>
+
+<p>Systems involved: the browser (React client components), the Next.js server (API routes + server actions, hosted on Vercel), wger API (external exercise data), Clerk (authentication + JWT), and Supabase (Postgres database + RLS enforcement).</p>
+
+<h2>2. Why should your app call the external API from the server (API route) instead of directly from the browser?</h2>
+
+<p>A few reasons. First, if we ever needed an API key for wger, it would stay on the server and never get shipped to the browser. We don't have one right now but that's a general best practice. Second, CORS — wger doesn't necessarily set permissive CORS headers, so the browser might just block the request. Going through our own API route avoids that entirely since it's same-origin.</p>
+
+<p>Third, caching. Our server route uses <code>next: { revalidate: 300 }</code> to cache responses for 5 minutes. If 10 users search "squat" in the same window, the server returns the cached result instead of hitting wger 10 times. Browsers would each make their own request. Fourth, the server route does data transformation — it normalizes wger's nested response (extracting the English translation from the <code>translations</code> array, finding the main image) into the shape the Explore page expects. That logic runs once on the server instead of being shipped in the client bundle.</p>
+
+<p>There's also rate limiting to think about. If we need to add backoff or throttling later, one server-side choke point is way easier to manage than N different user browsers all hammering the external API independently.</p>
+
+<h2>3. A classmate signs up on your app. What data does Clerk store vs. what does Supabase store? How are they connected?</h2>
+
+<p><strong>Clerk</strong> stores the identity and auth stuff. Email, password hash (or OAuth tokens if they used Google sign-in), name, profile image, session data, JWT signing keys. Clerk owns the "who are you" question.</p>
+
+<p><strong>Supabase</strong> stores everything application-related. Workouts, exercises, sets, routines, saved exercises from the wger API. Every table that holds user data has a <code>user_id</code> text column that gets populated from Clerk's user ID.</p>
+
+<p>They're connected through Clerk's "Connect with Supabase" integration, which is the newer approach (not the old JWT template flow — I actually thought I'd need to set up a custom JWT template at first, but this is simpler). The setup was: in Clerk I enabled the Supabase integration under Integrations, which adds a <code>role: "authenticated"</code> claim to session tokens. In Supabase I added Clerk as a third-party auth provider under Authentication and pointed it at my Clerk domain. In the app code, <code>createServerSupabaseClient()</code> in <code>src/lib/supabase.ts</code> passes Clerk's access token to the Supabase client via the <code>accessToken</code> callback: <code>accessToken: async () =&gt; (await auth()).getToken()</code>. Then every RLS policy on every Supabase table uses <code>auth.jwt() -&gt;&gt; 'sub'</code> to match the JWT's <code>sub</code> claim (which is the Clerk user ID) against the <code>user_id</code> column. So even if someone tried to query another user's data, RLS would block it at the database level.</p>
+
+<h2>4. Ask Claude (with MCP) to describe your database. Paste the response. Does it match your mental model?</h2>
+
+<p>I asked Claude with the Supabase MCP to list all tables. Here's what it returned (6 tables, all with RLS enabled):</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Table</th>
+      <th>Rows</th>
+      <th>Key Columns</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>workouts</strong></td>
+      <td>2</td>
+      <td><code>id</code> (uuid PK), <code>user_id</code> (text), <code>title</code>, <code>date</code>, <code>created_at</code></td>
+    </tr>
+    <tr>
+      <td><strong>workout_exercises</strong></td>
+      <td>6</td>
+      <td><code>id</code> (uuid PK), <code>workout_id</code> (FK → workouts), <code>name</code>, <code>notes</code>, <code>muscle_group</code>, <code>library_exercise_id</code>, <code>position</code></td>
+    </tr>
+    <tr>
+      <td><strong>workout_sets</strong></td>
+      <td>18</td>
+      <td><code>id</code> (uuid PK), <code>exercise_id</code> (FK → workout_exercises), <code>reps</code> (int), <code>weight</code> (numeric), <code>position</code></td>
+    </tr>
+    <tr>
+      <td><strong>routines</strong></td>
+      <td>1</td>
+      <td><code>id</code> (uuid PK), <code>user_id</code> (text), <code>name</code>, <code>created_at</code></td>
+    </tr>
+    <tr>
+      <td><strong>routine_exercises</strong></td>
+      <td>3</td>
+      <td><code>id</code> (uuid PK), <code>routine_id</code> (FK → routines), <code>name</code>, <code>muscle_group</code>, <code>library_exercise_id</code>, <code>target_sets</code>, <code>target_reps</code>, <code>position</code></td>
+    </tr>
+    <tr>
+      <td><strong>saved_exercises</strong></td>
+      <td>5</td>
+      <td><code>id</code> (uuid PK), <code>user_id</code> (text), <code>api_exercise_id</code> (int), <code>name</code>, <code>description</code>, <code>muscle_group</code>, <code>muscles</code> (jsonb), <code>equipment</code> (jsonb), <code>image_url</code>, <code>saved_at</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Yes, this matches my mental model pretty closely. There are three "parent" tables scoped to users via <code>user_id</code>: <code>workouts</code>, <code>routines</code>, and <code>saved_exercises</code>. The workout structure is normalized into three levels — <code>workouts</code> → <code>workout_exercises</code> → <code>workout_sets</code> — which mirrors the TypeScript types from Assignment 2 (a Workout contains Exercises, each Exercise contains Sets). Routines follow the same pattern with <code>routines</code> → <code>routine_exercises</code>.</p>
+
+<p><code>saved_exercises</code> is a flat table since it stores metadata directly from the wger API (muscles and equipment as jsonb blobs) rather than normalizing further. The <code>library_exercise_id</code> field on <code>workout_exercises</code> and <code>routine_exercises</code> threads back to the static 45-exercise library defined in TypeScript code — it's not a real foreign key in Postgres because that library lives in <code>src/lib/exercise-library.ts</code>, not in the database.</p>
+
+<p>There's also one Postgres function I added: <code>get_community_favorites(min_saves int, max_results int)</code>. It groups <code>saved_exercises</code> by <code>api_exercise_id</code> and returns the most-saved ones across all users, with a <code>save_count</code>. It's marked <code>SECURITY DEFINER</code> so it can bypass the per-user RLS policy (otherwise a normal client query would only count the caller's own rows). I granted EXECUTE to both <code>authenticated</code> and <code>anon</code> so even guests browsing <code>/explore</code> see Community Favorites — only aggregate counts are exposed, never individual saves.</p>
+
+<p>One thing that surprised me: I originally thought I'd need to manually create a JWT template in Clerk to get the Supabase integration working. The older tutorials all show that flow. But the newer "Connect with Supabase" approach using the publishable key and third-party auth provider setup handles it automatically, which made the whole thing much simpler than expected.</p>
+
+</body>
+</html>

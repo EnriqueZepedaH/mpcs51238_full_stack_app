@@ -1,40 +1,50 @@
-# Assignment 2 - Reflection Questions
+# Assignment 3 - Reflection Questions
 
-## 1. What's in your CLAUDE.md? How did your plan shape what Claude built — and how did it evolve as you worked?
+## 1. Trace a request: a user searches, saves, and views it on their profile. What systems are involved?
 
-My CLAUDE.md describes the Workout Tracker app — what it does, all 9 routes, the data model (TypeScript interfaces), state management approach, and the visual style I was going for (clean, minimal, Notion/Linear-inspired).
+I'll trace the "search, save, view" flow on the Explore page (`/explore`).
 
-The initial plan was pretty straightforward: 5 pages, a simple data model with workouts containing exercises and sets. I started by describing the kind of app I wanted — something I'd actually use to track my lifts — and picked a clean visual direction. Claude scaffolded the basics from that, and the first few commits were just getting the core loop working: home dashboard, workout list, add workout form, workout detail page (the dynamic route), workout records.
+The user types a query like "bench press" into the search input. The component debounces for 300ms then fires a `fetch` to `/api/exercises/search?q=bench+press`, which is a Next.js API route in `src/app/api/exercises/search/route.ts`. That route proxies to the wger public API (`https://wger.de/api/v2/exerciseinfo/?name__search=...&language__code=en`), normalizes the response (pulls out the English translation since the original site is in german, finds the main image, flattens the nested structure), and returns a clean list of suggestions. The fetch uses `next: { revalidate: 300 }` so the server caches results for 5 minutes.
 
-But the plan evolved a lot as I used the app and thought about what was missing. I kept comparing it to real workout apps I've used in the past and realized the UI was lacking key characteristics, for example in the add workout form, the exercise name field just a text input. So I asked Claude to add an exercise library with muscle groups and a searchable combobox. Then I wanted to save workout templates so I wouldn't have to rebuild the same routine every time, which led to the routines feature that work as reusable template for future workouts. Another nice featuer I decided to add as I iterated was the muscle heatmap. It is very useful to have a quick visual of which muscles I hit during each workout and which muscles I've hit in the last week (which can be seen in the home dashboard). But, then I realized the heatmap was too coarse (all of "Back" lit up the same), so I refactored the heatmap into a 3-tier hierarchy with 14 granular muscle groups (e.g. lats, traps and lower back are considered different muscle gorups).
+Results render as cards. The user clicks Save, which calls the `saveExercise()` server action in `src/lib/actions.ts`. That function calls `auth()` from Clerk to get the current userId, then creates a Supabase client via `createServerSupabaseClient()` (which passes Clerk's access token through the `accessToken` callback). It inserts a row into the `saved_exercises` table with the user's ID, exercise name, muscle info, and image URL. Supabase RLS policies enforce that you can only insert rows where `user_id` matches `auth.jwt() ->> 'sub'` (the Clerk user ID in the JWT).
 
-The CLAUDE.md itself got updated along the way to reflect new pages and types as they were added.
+Later the user goes to `/saved`. The page reads from `WorkoutContext`, which already loaded the user's saved exercises on mount via the `getSavedExercises()` server action — that's a `SELECT` on `saved_exercises` where RLS automatically scopes the query to the current user. So even on `/saved`, the picker on `/workouts/new`, and the heart/save state on `/explore`, all three components see the same in-memory list and stay in sync without refetching.
 
-## 2. Pick one page. Trace the path: what file renders it, what's the route, what components does it use, where does the data come from?
+Systems involved: the browser (React client components), the Next.js server (API routes + server actions, hosted on Vercel), wger API (external exercise data), Clerk (authentication + JWT), and Supabase (Postgres database + RLS enforcement).
 
-I'll trace the **Workout Detail** page at `/workouts/[id]`.
+## 2. Why should your app call the external API from the server (API route) instead of directly from the browser?
 
-**Route:** `/workouts/[id]` — this is a dynamic route. Visiting `/workouts/w1` renders the detail for the workout with id `w1`.
+A few reasons. First, if we ever needed an API key for wger, it would stay on the server and never get shipped to the browser. We don't have one right now but that's a general best practice. Second, CORS — wger doesn't necessarily set permissive CORS headers, so the browser might just block the request. Going through our own API route avoids that entirely since it's same-origin.
 
-**File:** `src/app/workouts/[id]/page.tsx`. It's a client component (`"use client"`) because it needs to read from React Context and use `useState` for the delete confirmation.
+Third, caching. Our server route uses `next: { revalidate: 300 }` to cache responses for 5 minutes. If 10 users search "squat" in the same window, the server returns the cached result instead of hitting wger 10 times. Browsers would each make their own request. Fourth, the server route does data transformation — it normalizes wger's nested response (extracting the English translation from the `translations` array, finding the main image) into the shape the Explore page expects. That logic runs once on the server instead of being shipped in the client bundle.
 
-**How it gets the ID:** The `params` prop is a Promise in Next.js 16, so the component uses React's `use()` hook to unwrap it: `const { id } = use(params)`.
+There's also rate limiting to think about. If we need to add backoff or throttling later, one server-side choke point is way easier to manage than N different user browsers all hammering the external API independently.
 
-**Where the data comes from:** The component calls `useWorkouts()` which reads from the global `WorkoutContext` (defined in `src/lib/workout-context.tsx`). It does `state.workouts.find(w => w.id === id)` to get the specific workout. All data lives in client-side memory — initialized from seed data in `src/lib/seed-data.ts`, modified by dispatching actions to the reducer.
+## 3. A classmate signs up on your app. What data does Clerk store vs. what does Supabase store? How are they connected?
 
-**Components it uses:**
-- `ExerciseDetail` (`src/components/exercise-detail.tsx`) — renders each exercise with its sets table (reps, weight, volume per set) and a muscle group badge
-- `MuscleHeatmap` (`src/components/muscle-heatmap.tsx`) — the SVG body silhouette showing which muscles were targeted, colored by volume
-- `MuscleGroupBadge` (via ExerciseDetail) — small pill showing the muscle group name
+**Clerk** stores the identity and auth stuff. Email, password hash (or OAuth tokens if they used Google sign-in), name, session data, JWT signing keys.
 
-**Layout:** The page is wrapped by the root layout (`src/app/layout.tsx`) which provides the sidebar navigation and the `WorkoutProvider` context. It shows a back link, the workout title and date, three summary stat cards (exercises, sets, volume), the muscle heatmap, and then the exercise list.
+**Supabase** stores everything application-related. Workouts, exercises, sets, routines, saved exercises from the wger API. Every table that holds user data has a `user_id` text column that gets populated from Clerk's user ID.
 
-If the workout ID doesn't match anything in state, it renders a "Workout not found" message with a link back to the workouts list.
+They're connected through Clerk's "Connect with Supabase" integration. The setup was: in Clerk I enabled the Supabase integration under Integrations, which adds a `role: "authenticated"` claim to session tokens. In Supabase I added Clerk as a third-party auth provider under Authentication and pointed it at my Clerk domain. In the app code, `createServerSupabaseClient()` in `src/lib/supabase.ts` passes Clerk's access token to the Supabase client via the `accessToken` callback: `accessToken: async () => (await auth()).getToken()`. Then every RLS policy on every Supabase table uses `auth.jwt() ->> 'sub'` to match the JWT's `sub` claim (which is the Clerk user ID) against the `user_id` column. So even if someone tried to query another user's data, RLS would block it at the database level.
 
-## 3. Describe one thing that happened when Claude tested your app with Playwright MCP. How did the build → verify loop change how you worked?
+## 4. Ask Claude (with MCP) to describe your database. Paste the response. Does it match your mental model?
 
-When I added the exercise combobox (replacing the old plain text input), the existing Playwright tests broke. The tests were looking for an input with `placeholder="Exercise name"`, but the combobox changed that to `placeholder="Search exercises..."`. The tests caught this immediately — they failed with a timeout waiting for an element that no longer existed.
+I asked Claude with the Supabase MCP to list all tables. Here's what it returned (6 tables, all with RLS enabled):
 
-This was actually a useful moment because it showed me that the tests were verifying real UI contracts. The fix was simple (update the placeholder string in the test), but it made me realize that every UI change has downstream effects on test selectors. Later, when I ran the comprehensive test suite (31 tests across all pages), a bunch failed not because of app bugs but because of strict mode violations — selectors like `getByText("Bench Press")` matching multiple elements on the page (the combobox dropdown, workout cards, etc.). Fixing those forced me to write more precise selectors like `.first()` and `{ exact: true }`.
+| Table | Rows | Key Columns |
+|---|---|---|
+| **workouts** | 2 | `id` (uuid PK), `user_id` (text), `title`, `date`, `created_at` |
+| **workout_exercises** | 6 | `id` (uuid PK), `workout_id` (FK → workouts), `name`, `notes`, `muscle_group`, `library_exercise_id`, `position` |
+| **workout_sets** | 18 | `id` (uuid PK), `exercise_id` (FK → workout_exercises), `reps` (int), `weight` (numeric), `position` |
+| **routines** | 1 | `id` (uuid PK), `user_id` (text), `name`, `created_at` |
+| **routine_exercises** | 3 | `id` (uuid PK), `routine_id` (FK → routines), `name`, `muscle_group`, `library_exercise_id`, `target_sets`, `target_reps`, `position` |
+| **saved_exercises** | 5 | `id` (uuid PK), `user_id` (text), `api_exercise_id` (int), `name`, `description`, `muscle_group`, `muscles` (jsonb), `equipment` (jsonb), `image_url`, `saved_at` |
 
-The build-verify loop made me more confident about shipping changes. Instead of manually clicking through every page after each feature, I could add the feature, run the tests, and know immediately if something broke. It also caught things I wouldn't have noticed manually — like the fact that deleting a workout and checking the redirect needed `{ name: "Workouts", exact: true }` because "Recent Workouts" was also a heading on that page.
+Yes, this matches my mental model pretty closely. There are three "parent" tables scoped to users via `user_id`: `workouts`, `routines`, and `saved_exercises`. The workout structure is normalized into three levels — `workouts` → `workout_exercises` → `workout_sets` — which mirrors the TypeScript types from Assignment 2 (a Workout contains Exercises, each Exercise contains Sets). Routines follow the same pattern with `routines` → `routine_exercises`.
+
+`saved_exercises` is a flat table since it stores metadata directly from the wger API (muscles and equipment as jsonb blobs) rather than normalizing further. The `library_exercise_id` field on `workout_exercises` and `routine_exercises` threads back to the static 45-exercise library defined in TypeScript code — it's not a real foreign key in Postgres because that library lives in `src/lib/exercise-library.ts`, not in the database.
+
+There's also one Postgres function I added: `get_community_favorites(min_saves int, max_results int)`. It groups `saved_exercises` by `api_exercise_id` and returns the most-saved ones across all users, with a `save_count`. It's marked `SECURITY DEFINER` so it can bypass the per-user RLS policy (otherwise a normal client query would only count the caller's own rows). I granted EXECUTE to both `authenticated` and `anon` so even guests browsing `/explore` see Community Favorites — only aggregate counts are exposed, never individual saves.
+
+One thing that surprised me: I originally thought I'd need to manually create a JWT template in Clerk to get the Supabase integration working. The older tutorials all show that flow. But the newer "Connect with Supabase" approach using the publishable key and third-party auth provider setup handles it automatically, which made the whole thing much simpler than expected.
