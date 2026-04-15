@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Exercise, MuscleGroup, Workout, WorkoutSet } from "@/lib/types";
 import { getPRWeight } from "@/lib/utils";
+import { useWorkouts } from "@/lib/workout-context";
 import SetInputRow from "./set-input-row";
 import ExerciseCombobox from "./exercise-combobox";
 import MuscleGroupBadge from "./muscle-group-badge";
@@ -48,6 +49,7 @@ export default function ExerciseForm({
   onRemove: () => void;
   workouts?: Workout[];
 }) {
+  const { state } = useWorkouts();
   const prWeight =
     workouts && exercise.name
       ? getPRWeight(workouts, exercise.name)
@@ -133,6 +135,7 @@ export default function ExerciseForm({
                 value={exercise.name}
                 onChange={handleExerciseSelect}
                 placeholder="Search exercises..."
+                savedExercises={state.savedExercises}
               />
             </div>
             {exercise.muscleGroup && (

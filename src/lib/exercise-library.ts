@@ -1,4 +1,9 @@
-import { LibraryExercise, MuscleGroup } from "./types";
+import {
+  ComboboxExercise,
+  LibraryExercise,
+  MuscleGroup,
+  SavedExercise,
+} from "./types";
 
 export const MUSCLE_HIERARCHY: Record<string, Record<string, MuscleGroup[]>> = {
   "Upper Body": {
@@ -155,4 +160,76 @@ export function searchExercises(
   }
 
   return results;
+}
+
+/**
+ * Maps a wger category string (e.g. "Arms", "Abs") to one of our MuscleGroup
+ * leaf values. wger's categories are coarser than ours, so this is best-effort:
+ * we route to the most representative leaf and fall back to "Full Body" for
+ * anything we don't recognize.
+ */
+export function wgerCategoryToMuscleGroup(category: string | null | undefined): MuscleGroup {
+  if (!category) return "Full Body";
+
+  // Already a leaf group? Use it as-is.
+  if (ALL_MUSCLE_GROUPS.includes(category as MuscleGroup)) {
+    return category as MuscleGroup;
+  }
+
+  // wger uses common gym terms like "Abs" — and exercise muscle names like
+  // "Biceps brachii" — neither matches our enum exactly.
+  const lower = category.toLowerCase();
+  if (lower.includes("chest") || lower.includes("pectoral")) return "Chest";
+  if (lower.includes("back") && lower.includes("lower")) return "Lower Back";
+  if (lower.includes("trap")) return "Traps";
+  if (lower.includes("lat") || lower === "back") return "Lats";
+  if (lower.includes("shoulder") || lower.includes("delt")) return "Shoulders";
+  if (lower.includes("bicep")) return "Biceps";
+  if (lower.includes("tricep")) return "Triceps";
+  if (lower.includes("forearm")) return "Forearms";
+  if (lower === "arms") return "Biceps"; // wger's "Arms" most often = biceps/triceps
+  if (lower.includes("quad")) return "Quads";
+  if (lower.includes("hamstring")) return "Hamstrings";
+  if (lower.includes("calf") || lower.includes("calves")) return "Calves";
+  if (lower.includes("glute")) return "Glutes";
+  if (lower.includes("ab") || lower.includes("core") || lower.includes("oblique")) return "Core";
+  if (lower.includes("leg")) return "Quads";
+
+  return "Full Body";
+}
+
+/**
+ * Returns combined search results from the static library AND the user's
+ * saved wger exercises. Library wins on case-insensitive name collisions
+ * (more reliable muscle group mapping). Library results come first, then
+ * saved results — the combobox renders them under separate section headers.
+ */
+export function searchAllExercises(
+  query: string,
+  savedExercises: SavedExercise[]
+): { library: ComboboxExercise[]; saved: ComboboxExercise[] } {
+  const library: ComboboxExercise[] = searchExercises(query).map((ex) => ({
+    id: ex.id,
+    name: ex.name,
+    muscleGroup: ex.muscleGroup,
+    source: "library",
+  }));
+
+  const libraryNames = new Set(library.map((e) => e.name.toLowerCase()));
+  const q = query.trim().toLowerCase();
+
+  const saved: ComboboxExercise[] = savedExercises
+    .filter((ex) => {
+      if (libraryNames.has(ex.name.toLowerCase())) return false;
+      if (!q) return true;
+      return ex.name.toLowerCase().includes(q);
+    })
+    .map((ex) => ({
+      id: `saved-${ex.apiExerciseId}`,
+      name: ex.name,
+      muscleGroup: wgerCategoryToMuscleGroup(ex.muscleGroup),
+      source: "saved",
+    }));
+
+  return { library, saved };
 }

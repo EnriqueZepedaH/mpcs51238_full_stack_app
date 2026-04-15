@@ -1,6 +1,7 @@
 "use client";
 
 import { MuscleGroup, RoutineExercise } from "@/lib/types";
+import { useWorkouts } from "@/lib/workout-context";
 import ExerciseCombobox from "./exercise-combobox";
 import MuscleGroupBadge from "./muscle-group-badge";
 
@@ -15,6 +16,7 @@ export default function RoutineExerciseForm({
   onChange: (updated: RoutineExercise) => void;
   onRemove: () => void;
 }) {
+  const { state } = useWorkouts();
   return (
     <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-4">
       <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-medium text-gray-600">
@@ -28,6 +30,7 @@ export default function RoutineExerciseForm({
             onChange({ ...exercise, name, muscleGroup, libraryExerciseId })
           }
           placeholder="Search exercises..."
+          savedExercises={state.savedExercises}
         />
       </div>
 

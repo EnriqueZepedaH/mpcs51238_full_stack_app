@@ -112,3 +112,22 @@ export interface SavedExercise {
   imageUrl: string | null;
   savedAt: string;
 }
+
+export interface CommunityFavorite {
+  apiExerciseId: number;
+  name: string;
+  muscleGroup: string | null;
+  imageUrl: string | null;
+  saveCount: number;
+}
+
+/**
+ * Unified shape used by ExerciseCombobox to render both static-library
+ * entries and the user's saved wger exercises in one searchable dropdown.
+ */
+export interface ComboboxExercise {
+  id: string;            // library slug, or `saved-${apiExerciseId}` for saved
+  name: string;
+  muscleGroup: MuscleGroup;
+  source: "library" | "saved";
+}
