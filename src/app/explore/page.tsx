@@ -2,11 +2,16 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { useAuth } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 import PageHeader from "@/components/page-header";
 import { WgerSearchSuggestion } from "@/lib/types";
 import { saveExercise, unsaveExercise, getSavedExercises } from "@/lib/actions";
 
 export default function ExplorePage() {
+  const { isSignedIn } = useAuth();
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<WgerSearchSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
@@ -14,12 +19,13 @@ export default function ExplorePage() {
   const [savingIds, setSavingIds] = useState<Set<number>>(new Set());
   const [error, setError] = useState<string | null>(null);
 
-  // Load already-saved exercise IDs on mount
+  // Load already-saved exercise IDs on mount (signed-in users only)
   useEffect(() => {
+    if (!isSignedIn) return;
     getSavedExercises()
       .then((saved) => setSavedIds(new Set(saved.map((s) => s.apiExerciseId))))
       .catch((err) => console.error("Failed to load saved exercises:", err));
-  }, []);
+  }, [isSignedIn]);
 
   // Debounced search
   useEffect(() => {
@@ -52,6 +58,12 @@ export default function ExplorePage() {
 
   const handleSave = useCallback(
     async (suggestion: WgerSearchSuggestion) => {
+      // Guests are bounced to sign-in; we'll come back here afterwards.
+      if (!isSignedIn) {
+        router.push("/sign-in?redirect_url=/explore");
+        return;
+      }
+
       const exerciseId = suggestion.data.id;
       if (savingIds.has(exerciseId)) return;
 
@@ -88,7 +100,7 @@ export default function ExplorePage() {
         });
       }
     },
-    [savingIds]
+    [savingIds, isSignedIn, router]
   );
 
   const handleUnsave = useCallback(
@@ -123,6 +135,21 @@ export default function ExplorePage() {
         title="Explore Exercises"
         subtitle="Search 800+ exercises from the wger database"
       />
+
+      {!isSignedIn && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
+          <p className="text-sm text-gray-600">
+            <span className="font-medium text-gray-900">Browsing as guest.</span>{" "}
+            Sign in to save exercises to your account.
+          </p>
+          <Link
+            href="/sign-in?redirect_url=/explore"
+            className="rounded-md bg-gray-900 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-gray-800"
+          >
+            Sign in
+          </Link>
+        </div>
+      )}
 
       <div>
         <input

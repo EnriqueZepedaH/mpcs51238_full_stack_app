@@ -3,49 +3,58 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { UserButton } from "@clerk/nextjs";
+import { UserButton, useAuth } from "@clerk/nextjs";
 
-const navItems = [
-  { href: "/", label: "Dashboard", icon: HomeIcon },
-  { href: "/workouts", label: "Workouts", icon: ListIcon },
-  { href: "/exercises", label: "Exercises", icon: DumbbellIcon },
-  { href: "/routines", label: "Routines", icon: RepeatIcon },
-  { href: "/records", label: "Records", icon: TrophyIcon },
+const publicNavItems = [
+  { href: "/", label: "Home", icon: HomeIcon },
+  { href: "/exercises", label: "Library", icon: DumbbellIcon },
   { href: "/explore", label: "Explore", icon: SearchIcon },
+];
+
+const protectedNavItems = [
+  { href: "/workouts", label: "Workouts", icon: ListIcon },
+  { href: "/routines", label: "Routines", icon: RepeatIcon },
   { href: "/saved", label: "Saved", icon: BookmarkIcon },
+  { href: "/records", label: "Records", icon: TrophyIcon },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { isSignedIn } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Hide the sidebar entirely on auth pages — those have their own full-screen layout.
+  if (pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up")) {
+    return null;
+  }
 
   return (
     <>
       {/* Mobile top bar */}
       <div className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 md:hidden">
-        <div className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-900 text-white text-sm font-bold">
             W
           </div>
           <span className="text-lg font-semibold text-gray-900">
             Workout Tracker
           </span>
-        </div>
+        </Link>
         <div className="flex items-center gap-2">
-          <UserButton />
+          {isSignedIn && <UserButton />}
           <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="rounded-md p-2 text-gray-600 hover:bg-gray-100"
-        >
-          {mobileOpen ? (
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          ) : (
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-            </svg>
-          )}
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="rounded-md p-2 text-gray-600 hover:bg-gray-100"
+          >
+            {mobileOpen ? (
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+              </svg>
+            )}
           </button>
         </div>
       </div>
@@ -54,83 +63,140 @@ export default function Sidebar() {
       {mobileOpen && (
         <div className="border-b border-gray-200 bg-white px-4 pb-3 md:hidden">
           <nav className="flex flex-col gap-1">
-            {navItems.map(({ href, label, icon: Icon }) => {
-              const isActive =
-                href === "/" ? pathname === "/" : pathname.startsWith(href);
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  onClick={() => setMobileOpen(false)}
-                  className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                    isActive
-                      ? "bg-gray-100 text-gray-900"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  {label}
-                </Link>
-              );
-            })}
-            <Link
-              href="/workouts/new"
+            <NavList
+              items={publicNavItems}
+              pathname={pathname}
               onClick={() => setMobileOpen(false)}
-              className="mt-1 flex items-center justify-center gap-2 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800"
-            >
-              <PlusIcon className="h-4 w-4" />
-              Log Workout
-            </Link>
+            />
+            {isSignedIn ? (
+              <>
+                <div className="my-2 border-t border-gray-100" />
+                <NavList
+                  items={protectedNavItems}
+                  pathname={pathname}
+                  onClick={() => setMobileOpen(false)}
+                />
+                <Link
+                  href="/workouts/new"
+                  onClick={() => setMobileOpen(false)}
+                  className="mt-2 flex items-center justify-center gap-2 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800"
+                >
+                  <PlusIcon className="h-4 w-4" />
+                  Log Workout
+                </Link>
+              </>
+            ) : (
+              <>
+                <div className="my-2 border-t border-gray-100" />
+                <Link
+                  href="/sign-in"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  href="/sign-up"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center justify-center rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800"
+                >
+                  Sign up free
+                </Link>
+              </>
+            )}
           </nav>
         </div>
       )}
 
       {/* Desktop sidebar */}
       <aside className="hidden h-screen w-60 flex-col border-r border-gray-200 bg-white md:flex">
-        <div className="flex items-center gap-2 px-5 py-5">
+        <Link href="/" className="flex items-center gap-2 px-5 py-5">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-900 text-white text-sm font-bold">
             W
           </div>
           <span className="text-lg font-semibold text-gray-900">
             Workout Tracker
           </span>
-        </div>
+        </Link>
 
-        <nav className="flex flex-1 flex-col gap-1 px-3 py-2">
-          {navItems.map(({ href, label, icon: Icon }) => {
-            const isActive =
-              href === "/" ? pathname === "/" : pathname.startsWith(href);
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                  isActive
-                    ? "bg-gray-100 text-gray-900"
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                {label}
-              </Link>
-            );
-          })}
+        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-2">
+          <NavList items={publicNavItems} pathname={pathname} />
+          {isSignedIn && (
+            <>
+              <div className="my-2 border-t border-gray-100" />
+              <p className="px-3 pb-1 text-xs font-medium uppercase tracking-wider text-gray-400">
+                My Workouts
+              </p>
+              <NavList items={protectedNavItems} pathname={pathname} />
+            </>
+          )}
         </nav>
 
-        <div className="border-t border-gray-200 p-3 space-y-3">
-          <div className="flex items-center gap-3 px-3">
-            <UserButton />
-            <span className="text-sm text-gray-600">Account</span>
+        {isSignedIn ? (
+          <div className="space-y-3 border-t border-gray-200 p-3">
+            <div className="flex items-center gap-3 px-3">
+              <UserButton />
+              <span className="text-sm text-gray-600">Account</span>
+            </div>
+            <Link
+              href="/workouts/new"
+              className="flex w-full items-center justify-center gap-2 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800"
+            >
+              <PlusIcon className="h-4 w-4" />
+              Log Workout
+            </Link>
           </div>
-          <Link
-            href="/workouts/new"
-            className="flex w-full items-center justify-center gap-2 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800"
-          >
-            <PlusIcon className="h-4 w-4" />
-            Log Workout
-          </Link>
-        </div>
+        ) : (
+          <div className="space-y-2 border-t border-gray-200 p-3">
+            <Link
+              href="/sign-in"
+              className="flex w-full items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/sign-up"
+              className="flex w-full items-center justify-center rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800"
+            >
+              Sign up free
+            </Link>
+          </div>
+        )}
       </aside>
+    </>
+  );
+}
+
+function NavList({
+  items,
+  pathname,
+  onClick,
+}: {
+  items: typeof publicNavItems;
+  pathname: string;
+  onClick?: () => void;
+}) {
+  return (
+    <>
+      {items.map(({ href, label, icon: Icon }) => {
+        const isActive =
+          href === "/" ? pathname === "/" : pathname.startsWith(href);
+        return (
+          <Link
+            key={href}
+            href={href}
+            onClick={onClick}
+            className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              isActive
+                ? "bg-gray-100 text-gray-900"
+                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+            }`}
+          >
+            <Icon className="h-4 w-4" />
+            {label}
+          </Link>
+        );
+      })}
     </>
   );
 }

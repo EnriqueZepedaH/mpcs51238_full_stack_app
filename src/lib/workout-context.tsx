@@ -8,6 +8,7 @@ import {
   useCallback,
   ReactNode,
 } from "react";
+import { useAuth } from "@clerk/nextjs";
 import { Workout, Routine } from "./types";
 import * as db from "./actions";
 
@@ -81,6 +82,7 @@ const WorkoutContext = createContext<{
 } | null>(null);
 
 export function WorkoutProvider({ children }: { children: ReactNode }) {
+  const { isLoaded, isSignedIn } = useAuth();
   const [state, localDispatch] = useReducer(workoutReducer, {
     workouts: [],
     routines: [],
@@ -88,6 +90,14 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
+    if (!isLoaded) return;
+
+    // Guests have nothing to load — skip Supabase calls entirely.
+    if (!isSignedIn) {
+      localDispatch({ type: "SET_LOADING", payload: false });
+      return;
+    }
+
     async function load() {
       try {
         const [workouts, routines] = await Promise.all([
@@ -102,7 +112,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
       }
     }
     load();
-  }, []);
+  }, [isLoaded, isSignedIn]);
 
   const dispatch = useCallback(async (action: DispatchAction) => {
     switch (action.type) {
